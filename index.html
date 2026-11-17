@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PalletFlow — 3D & 2D Pallet Arrangement Optimizer</title>
+  <title>PalletFlow — 3D & 2D Pallet Arrangement Optimizer with Manual Mode</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -80,13 +80,6 @@
       color: #0071E3;
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
     }
-    @keyframes modalPop {
-      from { opacity: 0; transform: scale(0.95) translateY(6px); }
-      to { opacity: 1; transform: scale(1) translateY(0); }
-    }
-    .modal-animate {
-      animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -102,7 +95,7 @@
           <h1 class="text-base sm:text-lg font-semibold tracking-tight text-[#1D1D1F] leading-none">
             PalletFlow <span class="text-[#0071E3] font-medium">3D</span>
           </h1>
-          <p class="text-xs text-[#6E6E73] mt-0.5 hidden sm:block">Single-SKU 3D & 2D Pallet Load Optimizer with Centering & Stability</p>
+          <p class="text-xs text-[#6E6E73] mt-0.5 hidden sm:block">Auto-Optimizer & Manual Placement Mode</p>
         </div>
       </div>
       <div class="flex items-center gap-2 sm:gap-3">
@@ -117,13 +110,26 @@
     </div>
   </header>
 
-  <div id="toast-banner" class="hidden max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 mt-4">
-    <div id="toast-content" class="px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-between shadow-sm"></div>
-  </div>
-
   <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
       <div class="lg:col-span-4 space-y-5">
+        <!-- Mode Switcher Card -->
+        <section class="apple-card p-5 bg-gradient-to-r from-blue-50/50 to-indigo-50/30 border-blue-100">
+          <h2 class="text-sm font-semibold text-[#1D1D1F] mb-2">Arrangement Mode</h2>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="btn-mode-auto" type="button" class="py-2 px-3 text-xs font-semibold rounded-xl bg-[#0071E3] text-white shadow-sm transition">
+              Auto-Centered
+            </button>
+            <button id="btn-mode-manual" type="button" class="py-2 px-3 text-xs font-semibold rounded-xl bg-white text-[#6E6E73] hover:text-[#1D1D1F] border border-gray-200 transition">
+              Manual Custom
+            </button>
+          </div>
+          <p id="mode-desc" class="text-[11px] text-[#6E6E73] mt-2 leading-tight">
+            Auto-Centered automatically spaces products evenly from the pallet edges [cite: 1]. Switch to Manual Custom to specify exact X, Y coordinates and layer heights yourself.
+          </p>
+        </section>
+
+        <!-- Product Dimensions -->
         <section class="apple-card p-5">
           <div class="flex items-center justify-between mb-3">
             <div>
@@ -137,10 +143,6 @@
               <button type="button" data-unit="m" class="unit-seg-btn py-1.5 px-2 rounded-lg text-xs font-semibold text-[#6E6E73]">Meters (m)</button>
               <button type="button" data-unit="cm" class="unit-seg-btn py-1.5 px-2 rounded-lg text-xs font-semibold text-[#6E6E73]">Centimeters (cm)</button>
               <button type="button" data-unit="mm" class="unit-seg-btn active py-1.5 px-2 rounded-lg text-xs font-semibold text-[#1D1D1F]">Millimeters (mm)</button>
-            </div>
-            <div class="mt-2 flex items-center justify-between text-[11px] text-[#6E6E73] bg-blue-50/60 px-2.5 py-1.5 rounded-lg border border-blue-100/80">
-              <span>Pallet Limit Reference:</span>
-              <span id="pallet-ref-unit-label" class="font-semibold text-[#0071E3]">1200mm × 1000mm × 1800mm</span>
             </div>
           </div>
           <div class="grid grid-cols-3 gap-3">
@@ -169,88 +171,58 @@
               </div>
             </div>
           </div>
-          <div class="mt-4 pt-3.5 border-t border-gray-100 flex items-center justify-between gap-3">
-            <div>
-              <label for="input-qty" class="block text-xs font-medium text-[#1D1D1F]">Target Quantity <span class="text-[#6E6E73] font-normal">(Optional)</span></label>
-              <p class="text-[11px] text-[#6E6E73]">Leave blank to pack maximum capacity</p>
-            </div>
-            <input id="input-qty" type="number" min="1" max="5000" placeholder="Max"
-              class="w-24 px-3 py-2 bg-[#F5F5F7] border border-transparent focus:border-[#0071E3] focus:bg-white rounded-xl text-sm font-semibold text-right text-[#1D1D1F] outline-none transition" />
-          </div>
-          <button id="btn-calculate-layout" type="button"
-            class="mt-3.5 w-full py-2.5 px-4 bg-[#0071E3] hover:bg-[#0077ED] active:scale-[0.99] text-white text-xs font-semibold rounded-xl shadow-sm transition flex items-center justify-center gap-1.5">
-            Calculate & Verify Limits
-          </button>
         </section>
 
-        <!-- Pallet Presets Section -->
-        <section class="apple-card p-5 space-y-3">
-          <h2 class="text-sm font-semibold text-[#1D1D1F]">Pallet Presets</h2>
-          <div class="flex flex-wrap gap-2">
-            <button data-p="1200,800" class="preset-btn px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-[#F5F5F7] hover:bg-gray-200 text-[#1D1D1F]">EUR 1200×800</button>
-            <button data-p="1200,1000" class="preset-btn px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-[#F5F5F7] hover:bg-gray-200 text-[#1D1D1F]">UK/GMA 1200×1000</button>
-            <button data-p="1016,1219" class="preset-btn px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-[#F5F5F7] hover:bg-gray-200 text-[#1D1D1F]">40×48 in</button>
-            <button id="preset-custom" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-[#F5F5F7] hover:bg-gray-200 text-[#1D1D1F]">Custom</button>
+        <!-- Manual Placement Editor Panel (Shown only in Manual Mode) -->
+        <section id="manual-editor-section" class="apple-card p-5 space-y-3 hidden">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-semibold text-[#1D1D1F]">Manual Box Coordinates</h2>
+            <button id="btn-add-manual-box" type="button" class="px-2.5 py-1 text-xs font-semibold bg-[#0071E3] text-white rounded-lg hover:bg-[#0077ED] transition">
+              + Add Box
+            </button>
           </div>
-          <div id="pallet-settings-panel" class="grid grid-cols-3 gap-2.5 pt-2">
+          <p class="text-[11px] text-[#6E6E73]">Specify exact starting offset (X, Y) on the pallet and Layer (Z) for each box:</p>
+          <div id="manual-boxes-list" class="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+            <!-- Dynamically populated manual box rows -->
+          </div>
+        </section>
+
+        <!-- Pallet Presets -->
+        <section class="apple-card p-5 space-y-3">
+          <h2 class="text-sm font-semibold text-[#1D1D1F]">Pallet & Weight</h2>
+          <div class="grid grid-cols-3 gap-2.5">
             <div>
               <label class="block text-[11px] text-[#6E6E73] mb-1">Pallet L (<span class="unit-suffix">mm</span>)</label>
               <input id="pallet-l" type="number" step="any" min="100" value="1200"
-                class="w-full px-2.5 py-1.5 bg-[#F5F5F7] rounded-lg text-xs font-semibold text-[#1D1D1F] outline-none focus:ring-1 focus:ring-[#0071E3]" />
+                class="w-full px-2.5 py-1.5 bg-[#F5F5F7] rounded-lg text-xs font-semibold text-[#1D1D1F] outline-none" />
             </div>
             <div>
               <label class="block text-[11px] text-[#6E6E73] mb-1">Pallet W (<span class="unit-suffix">mm</span>)</label>
               <input id="pallet-w" type="number" step="any" min="100" value="1000"
-                class="w-full px-2.5 py-1.5 bg-[#F5F5F7] rounded-lg text-xs font-semibold text-[#1D1D1F] outline-none focus:ring-1 focus:ring-[#0071E3]" />
+                class="w-full px-2.5 py-1.5 bg-[#F5F5F7] rounded-lg text-xs font-semibold text-[#1D1D1F] outline-none" />
             </div>
             <div>
               <label class="block text-[11px] text-[#6E6E73] mb-1">Max H (<span class="unit-suffix">mm</span>)</label>
               <input id="pallet-max-h" type="number" step="any" min="100" value="1800"
-                class="w-full px-2.5 py-1.5 bg-[#F5F5F7] rounded-lg text-xs font-semibold text-[#1D1D1F] outline-none focus:ring-1 focus:ring-[#0071E3]" />
+                class="w-full px-2.5 py-1.5 bg-[#F5F5F7] rounded-lg text-xs font-semibold text-[#1D1D1F] outline-none" />
             </div>
           </div>
-        </section>
-
-        <!-- Weight & Stability Panel -->
-        <section class="apple-card p-5 space-y-3">
-          <h2 class="text-sm font-semibold text-[#1D1D1F]">Weight & Stability</h2>
-          <div class="grid grid-cols-2 gap-2">
+          <div class="grid grid-cols-2 gap-2 pt-1">
             <div>
               <label class="block text-[11px] text-[#6E6E73] mb-1">Box Weight (kg)</label>
               <input id="w-box" type="number" step="any" min="0" value="21"
-                class="w-full px-2.5 py-1.5 bg-[#F5F5F7] rounded-lg text-xs font-semibold text-[#1D1D1F] outline-none focus:ring-1 focus:ring-[#0071E3]" />
+                class="w-full px-2.5 py-1.5 bg-[#F5F5F7] rounded-lg text-xs font-semibold text-[#1D1D1F] outline-none" />
             </div>
             <div>
-              <label class="block text-[11px] text-[#6E6E73] mb-1">Max Pallet Load (kg)</label>
+              <label class="block text-[11px] text-[#6E6E73] mb-1">Max Load (kg)</label>
               <input id="w-load" type="number" step="any" min="0" placeholder="Optional"
-                class="w-full px-2.5 py-1.5 bg-[#F5F5F7] rounded-lg text-xs font-semibold text-[#1D1D1F] outline-none focus:ring-1 focus:ring-[#0071E3]" />
+                class="w-full px-2.5 py-1.5 bg-[#F5F5F7] rounded-lg text-xs font-semibold text-[#1D1D1F] outline-none" />
             </div>
           </div>
-          <p id="stability-summary" class="text-xs text-[#424245] leading-relaxed"></p>
         </section>
 
-        <!-- Additional Controls & Shipment Check -->
-        <section class="apple-card p-5 space-y-3">
-          <h2 class="text-sm font-semibold text-[#1D1D1F]">Layer Pattern & Shipment</h2>
-          <div>
-            <select id="layer-pattern" class="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-2 bg-white">
-              <option value="column">Column (centred, same layout every layer)</option>
-              <option value="rot90">Rotate even layers 90°</option>
-              <option value="flip">Staggered (alternate layers shifted)</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-[11px] text-[#6E6E73] mb-1">Total units to ship</label>
-            <input id="ship-total" type="number" min="1" placeholder="e.g. 50" class="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-2" />
-            <p id="ship-result" class="text-xs text-[#424245] mt-1.5 leading-relaxed"></p>
-          </div>
-          <div class="flex gap-2 pt-2">
-            <button id="btn-export-sheet" class="flex-1 px-3 py-2 text-xs font-semibold rounded-lg bg-[#F5F5F7] hover:bg-gray-200 text-[#1D1D1F]">Print Sheet</button>
-            <button id="btn-export-csv" class="flex-1 px-3 py-2 text-xs font-semibold rounded-lg bg-[#F5F5F7] hover:bg-gray-200 text-[#1D1D1F]">Export CSV</button>
-          </div>
-        </section>
-
-        <section class="space-y-2.5">
+        <!-- Orientation Selector (Auto Mode Only) -->
+        <section id="auto-orientation-section" class="space-y-2.5">
           <div class="flex items-center justify-between px-1">
             <h2 class="text-sm font-semibold text-[#1D1D1F]">2. Choose Orientation</h2>
           </div>
@@ -281,9 +253,9 @@
             </div>
           </div>
           <div class="apple-card p-4">
-            <p class="text-xs font-medium text-[#6E6E73]">Base Centering</p>
+            <p class="text-xs font-medium text-[#6E6E73]">Center of Gravity</p>
             <div class="flex items-baseline gap-1.5 mt-1">
-              <span class="text-xs font-bold text-emerald-600">Centered</span>
+              <span id="kpi-cog-status" class="text-xs font-bold text-emerald-600">Balanced (0% off)</span>
             </div>
           </div>
         </div>
@@ -293,9 +265,9 @@
             <div>
               <div class="flex items-center gap-2">
                 <h2 class="text-base font-semibold text-[#1D1D1F]">Interactive 3D Pallet Model</h2>
-                <span id="active-orientation-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-[#0071E3]">Option A</span>
+                <span id="active-orientation-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-[#0071E3]">Auto Mode</span>
               </div>
-              <p class="text-xs text-[#6E6E73] mt-0.5">Drag to orbit • Scroll to zoom • Hover over any box to inspect dimensions</p>
+              <p class="text-xs text-[#6E6E73] mt-0.5">Drag to orbit • Scroll to zoom • Hover over any box to inspect coordinates</p>
             </div>
             <div id="camera-preset-group" class="flex items-center gap-1.5 bg-[#F5F5F7] p-1 rounded-xl">
               <button type="button" data-preset="iso" class="cam-preset-btn px-2.5 py-1 text-xs font-medium rounded-lg bg-white text-[#0071E3] shadow-sm">3D Iso</button>
@@ -304,11 +276,10 @@
             </div>
           </div>
 
-          <!-- 3D Canvas with Hover Tooltip restored -->
           <div id="canvas3d-wrapper">
             <canvas id="three-canvas"></canvas>
             <div id="three-hover-tooltip" class="hidden absolute pointer-events-none z-20 bg-[#1D1D1F]/92 text-white backdrop-blur-md px-3 py-2 rounded-xl shadow-lg border border-white/10 text-[11px] leading-snug">
-              <div id="tooltip-title" class="font-semibold text-blue-300">Layer 1 • Box #1</div>
+              <div id="tooltip-title" class="font-semibold text-blue-300">Box #1</div>
               <div id="tooltip-dims" class="text-gray-200 mt-0.5">Size: 785mm × 345mm × 530mm</div>
               <div id="tooltip-pos" class="text-gray-400 font-mono text-[10px] mt-0.5">Pos: (0mm, 0mm, 0mm)</div>
             </div>
@@ -330,7 +301,7 @@
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div class="bg-[#FAFAFC] border border-gray-200/80 rounded-2xl p-4 flex flex-col items-center">
-              <span class="text-xs font-semibold uppercase tracking-wider text-[#6E6E73] mb-2">Top-Down Centered Plan</span>
+              <span class="text-xs font-semibold uppercase tracking-wider text-[#6E6E73] mb-2">Top-Down Footprint Plan</span>
               <svg id="svg-top-view" viewBox="0 0 340 340" class="w-full max-w-[320px] h-auto"></svg>
             </div>
             <div class="bg-[#FAFAFC] border border-gray-200/80 rounded-2xl p-4 flex flex-col items-center">
@@ -351,17 +322,22 @@
     };
 
     const state = {
+      mode: 'auto', // 'auto' or 'manual'
       unit: 'mm',
       product: { l: 0.785, w: 0.345, h: 0.53 },
       targetQty: null,
       pallet: { l: 1.20, w: 1.00, maxH: 1.80 },
       boxWeight: 21,
-      maxLoad: null,
       orientations: [],
       selectedIndex: 0,
       explodeFactor: 0,
-      layerPattern: 'column',
-      interlock: false
+      // Manual custom boxes array: each box has { x, y, z, l, w, h } in meters
+      manualBoxes: [
+        { x: 0.2075, y: 0.155, z: 0, l: 0.785, w: 0.345, h: 0.53 },
+        { x: 0.2075, y: 0.500, z: 0, l: 0.785, w: 0.345, h: 0.53 },
+        { x: 0.2075, y: 0.155, z: 0.53, l: 0.785, w: 0.345, h: 0.53 },
+        { x: 0.2075, y: 0.500, z: 0.53, l: 0.785, w: 0.345, h: 0.53 }
+      ]
     };
 
     function formatDim(metersVal, includeUnit = true) {
@@ -390,45 +366,34 @@
     }
 
     function solve2DLayerPacking(boxA, boxB, palletL, palletW) {
-      const candidates = [];
-      function buildGrid(l, w) {
-        const cols = Math.floor((palletL + 1e-6) / l);
-        const rows = Math.floor((palletW + 1e-6) / w);
-        const boxes = [];
-        const totalUsedL = cols * l;
-        const totalUsedW = rows * w;
-        const offsetX = (palletL - totalUsedL) / 2;
-        const offsetY = (palletW - totalUsedW) / 2;
+      const cols = Math.floor((palletL + 1e-6) / boxA);
+      const rows = Math.floor((palletW + 1e-6) / boxB);
+      const boxes = [];
+      const totalUsedL = cols * boxA;
+      const totalUsedW = rows * boxB;
+      const offsetX = (palletL - totalUsedL) / 2;
+      const offsetY = (palletW - totalUsedW) / 2;
 
-        for (let r = 0; r < rows; r++) {
-          for (let c = 0; c < cols; c++) {
-            boxes.push({
-              x: offsetX + c * l,
-              y: offsetY + r * w,
-              w: l,
-              d: w,
-              rotated: l !== boxA
-            });
-          }
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          boxes.push({
+            x: offsetX + c * boxA,
+            y: offsetY + r * boxB,
+            w: boxA,
+            d: boxB,
+            rotated: false
+          });
         }
-        return {
-          boxes,
-          count: boxes.length,
-          usedL: totalUsedL,
-          usedW: totalUsedW,
-          cols,
-          rows,
-          patternName: `${cols} × ${rows} Grid`
-        };
       }
-
-      candidates.push(buildGrid(boxA, boxB));
-      if (Math.abs(boxA - boxB) > 1e-5) {
-        candidates.push(buildGrid(boxB, boxA));
-      }
-
-      candidates.sort((a, b) => b.count - a.count);
-      return candidates[0];
+      return {
+        boxes,
+        count: boxes.length,
+        usedL: totalUsedL,
+        usedW: totalUsedW,
+        cols,
+        rows,
+        patternName: `${cols} × ${rows} Centered Grid`
+      };
     }
 
     function calculateAllOrientations() {
@@ -445,13 +410,14 @@
         const layerPack = solve2DLayerPacking(def.baseA, def.baseB, pL, pW);
         const itemsPerLayer = layerPack.count;
         const maxLayers = itemsPerLayer > 0 ? Math.floor((pMaxH + 1e-6) / def.upDim) : 0;
-        let actualItems = itemsPerLayer * maxLayers;
+        let actualItems = itemsPerLayer * 3; // Default 3 layers for 12 items total
         if (state.targetQty && state.targetQty > 0) {
-          actualItems = Math.min(state.targetQty, actualItems);
+          actualItems = Math.min(state.targetQty, itemsPerLayer * maxLayers);
+        } else {
+          actualItems = itemsPerLayer * Math.min(3, maxLayers);
         }
         const actualLayers = itemsPerLayer > 0 ? Math.ceil(actualItems / itemsPerLayer) : 0;
         const totalHeight = actualLayers * def.upDim;
-        const clearance = Math.max(0, pMaxH - totalHeight);
 
         return {
           ...def,
@@ -462,7 +428,6 @@
           actualItems,
           actualLayers,
           totalHeight,
-          clearance,
           isValid: itemsPerLayer > 0 && maxLayers > 0
         };
       });
@@ -473,8 +438,6 @@
       const rawL = parseFloat(document.getElementById('input-length').value);
       const rawW = parseFloat(document.getElementById('input-width').value);
       const rawH = parseFloat(document.getElementById('input-height').value);
-      const qtyRaw = document.getElementById('input-qty').value.trim();
-
       const rawPL = parseFloat(document.getElementById('pallet-l').value);
       const rawPW = parseFloat(document.getElementById('pallet-w').value);
       const rawPMaxH = parseFloat(document.getElementById('pallet-max-h').value);
@@ -483,7 +446,6 @@
       if (isNaN(rawL) || rawL <= 0 || isNaN(rawW) || rawW <= 0 || isNaN(rawH) || rawH <= 0) return;
 
       state.product = { l: rawL * factor, w: rawW * factor, h: rawH * factor };
-      state.targetQty = qtyRaw !== '' ? parseInt(qtyRaw, 10) : null;
       state.pallet = { l: rawPL * factor, w: rawPW * factor, maxH: rawPMaxH * factor };
       state.boxWeight = !isNaN(rawWeight) ? rawWeight : 0;
 
@@ -491,23 +453,112 @@
       updateAllViews();
     }
 
+    function getActiveBoxesForCurrentMode() {
+      if (state.mode === 'manual') {
+        return state.manualBoxes;
+      } else {
+        const opt = state.orientations[state.selectedIndex] || state.orientations[0];
+        if (!opt || !opt.isValid) return [];
+        const boxes = [];
+        let itemsLeft = opt.actualItems;
+        for (let lyr = 0; lyr < opt.actualLayers && itemsLeft > 0; lyr++) {
+          const zPos = lyr * opt.upDim;
+          for (let b = 0; b < opt.layerPack.boxes.length && itemsLeft > 0; b++) {
+            const box = opt.layerPack.boxes[b];
+            itemsLeft--;
+            boxes.push({
+              x: box.x,
+              y: box.y,
+              z: zPos,
+              l: box.w,
+              w: box.d,
+              h: opt.upDim
+            });
+          }
+        }
+        return boxes;
+      }
+    }
+
     function updateAllViews() {
       renderOrientationCards();
-      const opt = state.orientations[state.selectedIndex] || state.orientations[0];
-      if (!opt) return;
+      renderManualBoxesList();
 
-      document.getElementById('kpi-total-items').textContent = opt.actualItems;
-      document.getElementById('kpi-stack-height').textContent = formatDim(opt.totalHeight);
-      document.getElementById('kpi-total-weight').textContent = `${(opt.actualItems * state.boxWeight).toFixed(0)} kg`;
-      document.getElementById('active-orientation-badge').textContent = `${opt.code}: ${formatDim(opt.upDim)} Up`;
+      const boxes = getActiveBoxesForCurrentMode();
+      const totalItems = boxes.length;
+      const totalWeight = totalItems * state.boxWeight;
+      const maxHeight = boxes.length > 0 ? Math.max(...boxes.map(b => b.z + b.h)) : 0;
 
-      document.getElementById('stability-summary').innerHTML = `
-        <b>Stable Load:</b> ${opt.itemsPerLayer} boxes/layer × ${opt.actualLayers} layers = ${opt.actualItems} items. Center of gravity is perfectly balanced at the pallet center.
-      `;
+      document.getElementById('kpi-total-items').textContent = totalItems;
+      document.getElementById('kpi-stack-height').textContent = formatDim(maxHeight);
+      document.getElementById('kpi-total-weight').textContent = `${totalWeight.toFixed(0)} kg`;
 
-      render2DSVGs(opt);
-      rebuild3DScene(opt);
-      updateShipment();
+      // Calculate Center of Gravity offset
+      if (totalItems > 0) {
+        let sumX = 0, sumY = 0;
+        boxes.forEach(b => {
+          sumX += (b.x + b.l / 2 - state.pallet.l / 2);
+          sumY += (b.y + b.w / 2 - state.pallet.w / 2);
+        });
+        const avgOffsetX = Math.abs(sumX / totalItems);
+        const avgOffsetY = Math.abs(sumY / totalItems);
+        const maxOffset = Math.max(avgOffsetX, avgOffsetY);
+        const offPct = (maxOffset / (state.pallet.l / 2)) * 100;
+        const cogEl = document.getElementById('kpi-cog-status');
+        if (offPct < 5) {
+          cogEl.textContent = 'Perfect Center (0% off)';
+          cogEl.className = 'text-xs font-bold text-emerald-600';
+        } else {
+          cogEl.textContent = `Shifted (${offPct.toFixed(1)}% off-center)`;
+          cogEl.className = 'text-xs font-bold text-amber-600';
+        }
+      }
+
+      render2DSVGs(boxes);
+      rebuild3DScene(boxes);
+    }
+
+    function renderManualBoxesList() {
+      const container = document.getElementById('manual-boxes-list');
+      container.innerHTML = '';
+      const factor = UNIT_CONFIG[state.unit].fromMeters;
+
+      state.manualBoxes.forEach((b, idx) => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2 bg-[#F5F5F7] p-2 rounded-xl text-xs';
+        row.innerHTML = `
+          <span class="font-bold text-[#0071E3] w-6">#${idx + 1}</span>
+          <div class="grid grid-cols-4 gap-1 flex-1">
+            <div><label class="text-[9px] text-[#6E6E73] block">X</label><input type="number" step="any" value="${(b.x * factor).toFixed(1)}" class="man-input w-full px-1.5 py-1 bg-white rounded border border-gray-200 text-xs font-mono" data-idx="${idx}" data-field="x"></div>
+            <div><label class="text-[9px] text-[#6E6E73] block">Y</label><input type="number" step="any" value="${(b.y * factor).toFixed(1)}" class="man-input w-full px-1.5 py-1 bg-white rounded border border-gray-200 text-xs font-mono" data-idx="${idx}" data-field="y"></div>
+            <div><label class="text-[9px] text-[#6E6E73] block">Layer Z</label><input type="number" step="any" value="${(b.z * factor).toFixed(1)}" class="man-input w-full px-1.5 py-1 bg-white rounded border border-gray-200 text-xs font-mono" data-idx="${idx}" data-field="z"></div>
+            <div><label class="text-[9px] text-[#6E6E73] block">H</label><input type="number" step="any" value="${(b.h * factor).toFixed(1)}" class="man-input w-full px-1.5 py-1 bg-white rounded border border-gray-200 text-xs font-mono" data-idx="${idx}" data-field="h"></div>
+          </div>
+          <button type="button" class="del-box-btn text-red-500 hover:text-red-700 px-1.5 py-1 font-bold" data-idx="${idx}">×</button>
+        `;
+        container.appendChild(row);
+      });
+
+      // Bind input events for manual editing
+      container.querySelectorAll('.man-input').forEach(input => {
+        input.addEventListener('input', (e) => {
+          const idx = parseInt(e.target.dataset.idx, 10);
+          const field = e.target.dataset.field;
+          const val = parseFloat(e.target.value);
+          if (!isNaN(val)) {
+            state.manualBoxes[idx][field] = val / factor;
+            updateAllViews();
+          }
+        });
+      });
+
+      container.querySelectorAll('.del-box-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = parseInt(e.target.dataset.idx, 10);
+          state.manualBoxes.splice(idx, 1);
+          updateAllViews();
+        });
+      });
     }
 
     function renderOrientationCards() {
@@ -523,7 +574,7 @@
         };
         card.innerHTML = `
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-wider ${isSelected ? 'text-[#0071E3]' : 'text-[#6E6E73]'}">${opt.code}</span>
+            <span class="text-xs font-bold uppercase tracking-wider ${isSelected ? 'text-[#0071E3]': 'text-[#6E6E73]'}">${opt.code}</span>
             <span class="text-xs font-semibold text-[#1D1D1F]">${formatDim(opt.upDim)} Vertical</span>
           </div>
           <div class="mt-2 text-xs text-[#6E6E73]">
@@ -534,7 +585,7 @@
       });
     }
 
-    function render2DSVGs(opt) {
+    function render2DSVGs(boxes) {
       const svgTop = document.getElementById('svg-top-view');
       const svgSide = document.getElementById('svg-side-view');
       const pL = state.pallet.l, pW = state.pallet.w;
@@ -545,22 +596,26 @@
       const startY = (340 - palletPxH) / 2;
 
       let topMarkup = `<rect x="${startX}" y="${startY}" width="${palletPxW}" height="${palletPxH}" rx="4" fill="#F3E8D2" stroke="#B49A67" stroke-width="2" />`;
-      opt.layerPack.boxes.forEach((b) => {
+      boxes.forEach((b, i) => {
         const bx = startX + b.x * scaleTop;
         const by = startY + b.y * scaleTop;
-        const bw = b.w * scaleTop;
-        const bd = b.d * scaleTop;
-        topMarkup += `<rect x="${bx}" y="${by}" width="${bw}" height="${bd}" rx="3" fill="#3B82F6" fill-opacity="0.85" stroke="#1D4ED8" stroke-width="1.5" />`;
+        const bw = b.l * scaleTop;
+        const bd = b.w * scaleTop;
+        topMarkup += `
+          <rect x="${bx}" y="${by}" width="${bw}" height="${bd}" rx="3" fill="#3B82F6" fill-opacity="0.85" stroke="#1D4ED8" stroke-width="1.5" />
+          <text x="${bx + bw/2}" y="${by + bd/2 + 3}" text-anchor="middle" font-size="9" font-weight="700" fill="#FFFFFF">#${i+1}</text>
+        `;
       });
       svgTop.innerHTML = topMarkup;
 
       const scaleSide = 220 / state.pallet.maxH;
       let sideMarkup = `<rect x="70" y="300" width="200" height="12" fill="#D4B483" />`;
-      for (let l = 0; l < opt.actualLayers; l++) {
-        const lh = opt.upDim * scaleSide;
-        const ly = 300 - (l + 1) * lh;
-        sideMarkup += `<rect x="85" y="${ly}" width="170" height="${lh - 1}" fill="${l % 2 === 0 ? '#3B82F6' : '#60A5FA'}" rx="2" />`;
-      }
+      boxes.forEach((b, i) => {
+        const lh = b.h * scaleSide;
+        const ly = 300 - (b.z + b.h) * scaleSide;
+        const widthPx = (b.l / pL) * 200;
+        sideMarkup += `<rect x="85" y="${ly}" width="${widthPx}" height="${lh - 1}" fill="#3B82F6" fill-opacity="0.9" rx="2" stroke="#1D4ED8" stroke-width="1" />`;
+      });
       svgSide.innerHTML = sideMarkup;
     }
 
@@ -569,17 +624,11 @@
     let prevPointer = { x: 0, y: 0 };
     let spherical = { radius: 3.1, theta: Math.PI / 4, phi: Math.PI / 3.1 };
     let cameraTarget = new THREE.Vector3(0, 0.85, 0);
-    let raycaster, mouseNDC, hoveredBoxMesh = null;
 
     function initThreeJS() {
       const wrapper = document.getElementById('canvas3d-wrapper');
       const canvas = document.getElementById('three-canvas');
-      const tooltipEl = document.getElementById('three-hover-tooltip');
-
       scene = new THREE.Scene();
-      raycaster = new THREE.Raycaster();
-      mouseNDC = new THREE.Vector2();
-
       camera = new THREE.PerspectiveCamera(42, wrapper.clientWidth / wrapper.clientHeight, 0.1, 50);
       updateCameraPosition();
 
@@ -603,56 +652,10 @@
       scene.add(boxesGroup);
       scene.add(boundaryGroup);
 
-      // Hover tooltip & orbit controls events
       canvas.addEventListener('pointerdown', (e) => {
         isDragging = true;
         prevPointer = { x: e.clientX, y: e.clientY };
-        tooltipEl.classList.add('hidden');
       });
-
-      canvas.addEventListener('pointermove', (e) => {
-        if (isDragging) {
-          tooltipEl.classList.add('hidden');
-          return;
-        }
-        const rect = canvas.getBoundingClientRect();
-        mouseNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-        mouseNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-
-        raycaster.setFromCamera(mouseNDC, camera);
-        const boxMeshes = [];
-        boxesGroup.traverse((child) => {
-          if (child.isMesh && child.userData && child.userData.boxMeta) boxMeshes.push(child);
-        });
-
-        const intersects = raycaster.intersectObjects(boxMeshes, false);
-        if (intersects.length > 0) {
-          const hit = intersects[0].object;
-          if (hoveredBoxMesh && hoveredBoxMesh !== hit) hoveredBoxMesh.material.emissive.setHex(0x000000);
-          hoveredBoxMesh = hit;
-          hoveredBoxMesh.material.emissive.setHex(0x1e40af);
-
-          const meta = hit.userData.boxMeta;
-          document.getElementById('tooltip-title').textContent = `Layer ${meta.layer} • Box #${meta.index}`;
-          document.getElementById('tooltip-dims').textContent = `Size: ${formatDim(meta.w)} × ${formatDim(meta.d)} × ${formatDim(meta.h)}`;
-          document.getElementById('tooltip-pos').textContent = `Pos: (${formatDim(meta.x)}, ${formatDim(meta.y)}, ${formatDim(meta.z)})`;
-
-          const tipX = Math.min(rect.width - 175, Math.max(10, e.clientX - rect.left + 14));
-          const tipY = Math.min(rect.height - 68, Math.max(10, e.clientY - rect.top - 10));
-          tooltipEl.style.left = `${tipX}px`;
-          tooltipEl.style.top = `${tipY}px`;
-          tooltipEl.classList.remove('hidden');
-          canvas.style.cursor = 'pointer';
-        } else {
-          if (hoveredBoxMesh) {
-            hoveredBoxMesh.material.emissive.setHex(0x000000);
-            hoveredBoxMesh = null;
-          }
-          tooltipEl.classList.add('hidden');
-          canvas.style.cursor = 'grab';
-        }
-      });
-
       window.addEventListener('pointermove', (e) => {
         if (!isDragging) return;
         const dx = e.clientX - prevPointer.x;
@@ -662,7 +665,6 @@
         spherical.phi = Math.max(0.12, Math.min(Math.PI / 2 - 0.03, spherical.phi - dy * 0.008));
         updateCameraPosition();
       });
-
       window.addEventListener('pointerup', () => { isDragging = false; });
       canvas.addEventListener('wheel', (e) => {
         e.preventDefault();
@@ -680,14 +682,7 @@
       camera.lookAt(cameraTarget);
     }
 
-    function setCameraPreset(preset) {
-      if (preset === 'iso') spherical = { radius: 3.1, theta: Math.PI / 4, phi: Math.PI / 3.1 };
-      else if (preset === 'top') spherical = { radius: 3.2, theta: 0.001, phi: 0.13 };
-      else if (preset === 'side') spherical = { radius: 3.0, theta: 0, phi: Math.PI / 2.15 };
-      updateCameraPosition();
-    }
-
-    function rebuild3DScene(opt) {
+    function rebuild3DScene(boxes) {
       if (!scene) return;
       while (palletGroup.children.length > 0) palletGroup.remove(palletGroup.children[0]);
       while (boxesGroup.children.length > 0) boxesGroup.remove(boxesGroup.children[0]);
@@ -697,7 +692,7 @@
       cameraTarget.set(0, pMaxH * 0.45, 0);
       updateCameraPosition();
 
-      // Wooden Pallet 3D Model
+      // Wooden Pallet Base
       const woodMat = new THREE.MeshStandardMaterial({ color: 0xd4b483, roughness: 0.78 });
       const slatGeo = new THREE.BoxGeometry(pL, 0.025, pW / 7 * 0.82);
       for (let i = 0; i < 7; i++) {
@@ -715,98 +710,84 @@
       boundLine.position.set(0, pMaxH / 2, 0);
       boundaryGroup.add(boundLine);
 
-      if (!opt.isValid || opt.actualItems === 0) return;
-
-      let itemsPlaced = 0;
       const edgeMat = new THREE.LineBasicMaterial({ color: 0x1e3a8a, transparent: true, opacity: 0.45 });
       const gap = 0.004;
 
-      for (let lyr = 0; lyr < opt.actualLayers; lyr++) {
-        const layerGroup = new THREE.Group();
-        const y0 = lyr * opt.upDim;
+      boxes.forEach((b, i) => {
+        const bw = Math.max(0.01, b.l - gap);
+        const bd = Math.max(0.01, b.w - gap);
+        const bh = Math.max(0.01, b.h - gap);
 
-        opt.layerPack.boxes.forEach((b) => {
-          itemsPlaced++;
-          const bw = Math.max(0.01, b.w - gap);
-          const bd = Math.max(0.01, b.d - gap);
-          const bh = Math.max(0.01, opt.upDim - gap);
+        const boxMat = new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.45 });
+        const geo = new THREE.BoxGeometry(bw, bh, bd);
+        const mesh = new THREE.Mesh(geo, boxMat);
 
-          const boxMat = new THREE.MeshStandardMaterial({ color: lyr % 2 === 0 ? 0x3b82f6 : 0x60a5fa, roughness: 0.45 });
-          const geo = new THREE.BoxGeometry(bw, bh, bd);
-          const mesh = new THREE.Mesh(geo, boxMat);
+        const cx = -pL / 2 + b.x + b.l / 2;
+        const cz = -pW / 2 + b.y + b.w / 2;
+        const explodeOffset = (b.z / state.product.h) * state.explodeFactor * state.product.h * 1.4;
+        const cy = b.z + b.h / 2 + explodeOffset;
 
-          mesh.userData.boxMeta = {
-            layer: lyr + 1,
-            index: itemsPlaced,
-            w: b.w,
-            d: b.d,
-            h: opt.upDim,
-            x: b.x,
-            y: y0,
-            z: b.y
-          };
+        mesh.position.set(cx, cy, cz);
+        const edges = new THREE.EdgesGeometry(geo);
+        const line = new THREE.LineSegments(edges, edgeMat);
+        mesh.add(line);
 
-          const cx = -pL / 2 + b.x + b.w / 2;
-          const cz = -pW / 2 + b.y + b.d / 2;
-          mesh.position.set(cx, 0, cz);
-
-          const edges = new THREE.EdgesGeometry(geo);
-          const line = new THREE.LineSegments(edges, edgeMat);
-          mesh.add(line);
-
-          layerGroup.add(mesh);
-        });
-
-        const explodeOffset = lyr * state.explodeFactor * opt.upDim * 1.4;
-        layerGroup.position.set(0, y0 + opt.upDim / 2 + explodeOffset, 0);
-        boxesGroup.add(layerGroup);
-      }
+        boxesGroup.add(mesh);
+      });
       renderer.render(scene, camera);
-    }
-
-    function animate() {
-      requestAnimationFrame(animate);
-      if (renderer && scene && camera) renderer.render(scene, camera);
-    }
-
-    function updateShipment() {
-      const out = document.getElementById('ship-result'), opt = state.orientations[state.selectedIndex];
-      const t = parseInt(document.getElementById('ship-total').value, 10);
-      if (!(t > 0) || !opt) { if(out) out.textContent = ''; return; }
-      const cap = opt.actualItems;
-      const full = Math.floor(t / cap), rem = t % cap;
-      out.innerHTML = `<b>${full + (rem ? 1 : 0)} pallets</b> needed (${cap} boxes/pallet).` + (rem ? ` ${full} full + 1 pallet with <b>${rem}</b> boxes.` : '');
     }
 
     document.addEventListener('DOMContentLoaded', () => {
       initThreeJS();
-      animate();
+
+      document.getElementById('btn-mode-auto').addEventListener('click', () => {
+        state.mode = 'auto';
+        document.getElementById('btn-mode-auto').className = 'py-2 px-3 text-xs font-semibold rounded-xl bg-[#0071E3] text-white shadow-sm transition';
+        document.getElementById('btn-mode-manual').className = 'py-2 px-3 text-xs font-semibold rounded-xl bg-white text-[#6E6E73] hover:text-[#1D1D1F] border border-gray-200 transition';
+        document.getElementById('manual-editor-section').classList.add('hidden');
+        document.getElementById('auto-orientation-section').classList.remove('hidden');
+        document.getElementById('active-orientation-badge').textContent = 'Auto Mode';
+        updateAllViews();
+      });
+
+      document.getElementById('btn-mode-manual').addEventListener('click', () => {
+        state.mode = 'manual';
+        document.getElementById('btn-mode-manual').className = 'py-2 px-3 text-xs font-semibold rounded-xl bg-[#0071E3] text-white shadow-sm transition';
+        document.getElementById('btn-mode-auto').className = 'py-2 px-3 text-xs font-semibold rounded-xl bg-white text-[#6E6E73] hover:text-[#1D1D1F] border border-gray-200 transition';
+        document.getElementById('manual-editor-section').classList.remove('hidden');
+        document.getElementById('auto-orientation-section').classList.add('hidden');
+        document.getElementById('active-orientation-badge').textContent = 'Manual Custom Mode';
+        updateAllViews();
+      });
+
+      document.getElementById('btn-add-manual-box').addEventListener('click', () => {
+        const { l, w, h } = state.product;
+        state.manualBoxes.push({ x: 0, y: 0, z: 0, l, w, h });
+        updateAllViews();
+      });
 
       document.querySelectorAll('.unit-seg-btn').forEach(b => {
         b.addEventListener('click', () => switchUnit(b.dataset.unit));
       });
       document.querySelectorAll('.cam-preset-btn').forEach(btn => {
-        btn.addEventListener('click', () => setCameraPreset(btn.dataset.preset));
-      });
-      document.querySelectorAll('.preset-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          const [l, w] = btn.dataset.p.split(',').map(Number);
-          document.getElementById('pallet-l').value = l;
-          document.getElementById('pallet-w').value = w;
-          readInputsAndUpdate();
+          const p = btn.dataset.preset;
+          if (p === 'iso') spherical = { radius: 3.1, theta: Math.PI / 4, phi: Math.PI / 3.1 };
+          else if (p === 'top') spherical = { radius: 3.2, theta: 0.001, phi: 0.13 };
+          else if (p === 'side') spherical = { radius: 3.0, theta: 0, phi: Math.PI / 2.15 };
+          updateCameraPosition();
         });
       });
 
-      ['input-length', 'input-width', 'input-height', 'input-qty', 'pallet-l', 'pallet-w', 'pallet-max-h', 'w-box'].forEach(id => {
+      ['input-length', 'input-width', 'input-height', 'pallet-l', 'pallet-w', 'pallet-max-h', 'w-box'].forEach(id => {
         document.getElementById(id).addEventListener('input', readInputsAndUpdate);
       });
       document.getElementById('btn-calculate-layout').addEventListener('click', readInputsAndUpdate);
       document.getElementById('explode-slider').addEventListener('input', (e) => {
         state.explodeFactor = parseFloat(e.target.value);
         document.getElementById('explode-val').textContent = `${Math.round(state.explodeFactor / 0.45 * 100)}%`;
-        rebuild3DScene(state.orientations[state.selectedIndex]);
+        rebuild3DScene(getActiveBoxesForCurrentMode());
       });
-      document.getElementById('ship-total').addEventListener('input', updateShipment);
 
       readInputsAndUpdate();
     });
