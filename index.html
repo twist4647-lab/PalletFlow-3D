@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PalletFlow — 3D & 2D Pallet Arrangement Optimizer with Manual & Auto Modes</title>
+  <title>PalletFlow — 3D & 2D Pallet Arrangement Optimizer with Auto-Limits & Manual Mode</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -95,7 +95,7 @@
           <h1 class="text-base sm:text-lg font-semibold tracking-tight text-[#1D1D1F] leading-none">
             PalletFlow <span class="text-[#0071E3] font-medium">3D</span>
           </h1>
-          <p class="text-xs text-[#6E6E73] mt-0.5 hidden sm:block">Professional 3D & 2D Pallet Optimizer with Centering & Manual Arrangement Mode</p>
+          <p class="text-xs text-[#6E6E73] mt-0.5 hidden sm:block">Full Features, Max Limits & Manual Arrangement Mode</p>
         </div>
       </div>
       <div class="flex items-center gap-2 sm:gap-3">
@@ -109,10 +109,6 @@
       </div>
     </div>
   </header>
-
-  <div id="toast-banner" class="hidden max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 mt-4">
-    <div id="toast-content" class="px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-between shadow-sm"></div>
-  </div>
 
   <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -128,8 +124,8 @@
               Manual Custom
             </button>
           </div>
-          <p id="mode-desc" class="text-[11px] text-[#6E6E73] mt-2 leading-tight">
-            Auto-Centered automatically spaces products evenly from the pallet edges [cite: 1]. Switch to Manual Custom to specify exact coordinates yourself.
+          <p class="text-[11px] text-[#6E6E73] mt-2 leading-tight">
+            Auto-Centered automatically spaces products evenly from pallet edges [cite: 1]. Switch to Manual Custom to specify exact box coordinates yourself.
           </p>
         </section>
 
@@ -260,7 +256,7 @@
           </div>
         </section>
 
-        <!-- Orientation Selector (Auto Mode Only) -->
+        <!-- 2. Choose Orientation (Auto Mode Only) with Full Max Limits & Stats -->
         <section id="auto-orientation-section" class="space-y-2.5">
           <div class="flex items-center justify-between px-1">
             <h2 class="text-sm font-semibold text-[#1D1D1F]">2. Choose Orientation</h2>
@@ -315,7 +311,6 @@
             </div>
           </div>
 
-          <!-- 3D Canvas with Tooltip Restored -->
           <div id="canvas3d-wrapper">
             <canvas id="three-canvas"></canvas>
             <div id="three-hover-tooltip" class="hidden absolute pointer-events-none z-20 bg-[#1D1D1F]/92 text-white backdrop-blur-md px-3 py-2 rounded-xl shadow-lg border border-white/10 text-[11px] leading-snug">
@@ -334,6 +329,7 @@
           </div>
         </section>
 
+        <!-- 2D Engineering Layout Diagrams with detailed grid badges -->
         <section class="apple-card p-5">
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-base font-semibold text-[#1D1D1F]">2D Engineering Layout Diagrams</h2>
@@ -412,7 +408,6 @@
       const boxes = [];
       const totalUsedL = cols * boxA;
       const totalUsedW = rows * boxB;
-      // Exact centering math: (Pallet Dimension - Used Footprint) / 2
       const offsetX = (palletL - totalUsedL) / 2;
       const offsetY = (palletW - totalUsedW) / 2;
 
@@ -452,7 +447,7 @@
         const layerPack = solve2DLayerPacking(def.baseA, def.baseB, pL, pW);
         const itemsPerLayer = layerPack.count;
         const maxLayers = itemsPerLayer > 0 ? Math.floor((pMaxH + 1e-6) / def.upDim) : 0;
-        let actualItems = itemsPerLayer * 3; // 3 layers for 12 boxes default
+        let actualItems = itemsPerLayer * 3;
         if (state.targetQty && state.targetQty > 0) {
           actualItems = Math.min(state.targetQty, itemsPerLayer * maxLayers);
         } else {
@@ -535,6 +530,13 @@
       document.getElementById('kpi-stack-height').textContent = formatDim(maxHeight);
       document.getElementById('kpi-total-weight').textContent = `${totalWeight.toFixed(0)} kg`;
 
+      const opt = state.orientations[state.selectedIndex] || state.orientations[0];
+      if (opt && state.mode === 'auto') {
+        document.getElementById('svg-pattern-badge').textContent = `Grid: ${opt.layerPack.patternName}`;
+      } else {
+        document.getElementById('svg-pattern-badge').textContent = `Manual Layout (${boxes.length} boxes)`;
+      }
+
       if (totalItems > 0) {
         let sumX = 0, sumY = 0;
         boxes.forEach(b => {
@@ -610,14 +612,20 @@
           state.selectedIndex = idx;
           updateAllViews();
         };
+
+        const maxLayersBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-700">Max ${opt.maxLayers} layers</span>`;
+        const fitWarning = opt.isValid ? '' : '<span class="text-xs text-red-500 font-semibold block mt-1">Exceeds pallet dimensions</span>';
+
         card.innerHTML = `
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-wider ${isSelected ? 'text-[#0071E3]' : 'text-[#6E6E73]'}">${opt.code}</span>
-            <span class="text-xs font-semibold text-[#1D1D1F]">${formatDim(opt.upDim)} Vertical</span>
+            <span class="text-xs font-bold uppercase tracking-wider ${isSelected ? 'text-[#0071E3]' : 'text-[#6E6E73]'}">${opt.code} (${formatDim(opt.upDim)} vertical)</span>
+            ${maxLayersBadge}
           </div>
-          <div class="mt-2 text-xs text-[#6E6E73]">
-            Per layer: <b>${opt.itemsPerLayer}</b> | Total: <b>${opt.actualItems}</b> items (${formatDim(opt.totalHeight)})
+          <div class="mt-2 text-xs text-[#6E6E73] flex justify-between items-center">
+            <span>Per layer: <b>${opt.itemsPerLayer}</b></span>
+            <span>Total stack: <b>${formatDim(opt.totalHeight)}</b></span>
           </div>
+          ${fitWarning}
         `;
         container.appendChild(card);
       });
@@ -783,7 +791,6 @@
       cameraTarget.set(0, pMaxH * 0.45, 0);
       updateCameraPosition();
 
-      // Wooden Pallet 3D Model
       const woodMat = new THREE.MeshStandardMaterial({ color: 0xd4b483, roughness: 0.78 });
       const slatGeo = new THREE.BoxGeometry(pL, 0.025, pW / 7 * 0.82);
       for (let i = 0; i < 7; i++) {
@@ -793,7 +800,6 @@
         palletGroup.add(slatMesh);
       }
 
-      // Max Height Boundary Box
       const boundGeo = new THREE.BoxGeometry(pL, pMaxH, pW);
       const boundEdges = new THREE.EdgesGeometry(boundGeo);
       const boundLine = new THREE.LineSegments(boundEdges, new THREE.LineDashedMaterial({ color: 0xf59e0b, dashSize: 0.06, gapSize: 0.04 }));
