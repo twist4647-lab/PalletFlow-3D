@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PalletFlow — 3D & 2D Pallet Arrangement Optimizer</title>
+  <title>PalletFlow — 3D & 2D Pallet Load Optimizer</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Three.js (r128) -->
@@ -80,15 +80,6 @@
       transform: scale(1.12);
     }
 
-    /* Custom Toggle Switch */
-    .toggle-checkbox:checked {
-      right: 0;
-      border-color: #0071E3;
-    }
-    .toggle-checkbox:checked + .toggle-label {
-      background-color: #0071E3;
-    }
-
     /* Canvas container */
     #canvas3d-wrapper {
       position: relative;
@@ -107,7 +98,7 @@
       }
     }
 
-    /* Hide number input arrows for cleaner look */
+    /* Hide number input arrows */
     input[type=number]::-webkit-inner-spin-button,
     input[type=number]::-webkit-outer-spin-button {
       -webkit-appearance: none;
@@ -140,11 +131,10 @@
 <body class="min-h-screen flex flex-col">
 
   <!-- Top Navigation Header -->
-  <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-200/70">
+  <header class="sticky top-0 z-30 bg-white/85 backdrop-blur-md border-b border-gray-200/70">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-xl bg-[#0071E3] flex items-center justify-center text-white shadow-sm">
-          <!-- Isometric Cube Icon -->
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
           </svg>
@@ -153,14 +143,14 @@
           <h1 class="text-base sm:text-lg font-semibold tracking-tight text-[#1D1D1F] leading-none">
             PalletFlow <span class="text-[#0071E3] font-medium">3D</span>
           </h1>
-          <p class="text-xs text-[#6E6E73] mt-0.5 hidden sm:block">Single-SKU 3D & 2D Pallet Load Optimizer</p>
+          <p class="text-xs text-[#6E6E73] mt-0.5 hidden sm:block">Single-SKU 3D & 2D Pallet Load Optimizer with Centering & Stability</p>
         </div>
       </div>
 
       <div class="flex items-center gap-2 sm:gap-3">
         <span id="header-pallet-badge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#F5F5F7] text-[#1D1D1F] border border-gray-200/80">
           <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-          Pallet: 1.2m × 1.2m × 1.8m
+          Pallet: 1200mm × 1000mm × 1800mm
         </span>
         <button id="btn-reset-defaults" class="px-3 py-1.5 text-xs font-medium text-[#0071E3] hover:bg-blue-50 rounded-lg transition">
           Reset Example
@@ -169,7 +159,7 @@
     </div>
   </header>
 
-  <!-- Notification Banner (Replaces alert) -->
+  <!-- Notification Banner -->
   <div id="toast-banner" class="hidden max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 mt-4">
     <div id="toast-content" class="px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-between shadow-sm"></div>
   </div>
@@ -178,10 +168,10 @@
   <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-      <!-- LEFT SIDEBAR: Controls & Orientation Selector (4 cols on desktop) -->
+      <!-- LEFT SIDEBAR: Controls & Settings -->
       <div class="lg:col-span-4 space-y-5">
 
-        <!-- 1. Product Dimensions Input Card -->
+        <!-- Product Dimensions Input Card -->
         <section class="apple-card p-5">
           <div class="flex items-center justify-between mb-3">
             <div>
@@ -190,56 +180,57 @@
             </div>
           </div>
 
-          <!-- Segmented Unit Selector (m, cm, mm) -->
+          <!-- Unit Selector -->
           <div class="mb-4">
             <label class="block text-[11px] font-medium text-[#6E6E73] mb-1.5">Input & Display Unit</label>
-            <div class="grid grid-cols-3 gap-1 p-1 bg-[#F5F5F7] rounded-xl border border-gray-200/60" role="group" aria-label="Measurement Unit">
-              <button type="button" data-unit="m" class="unit-seg-btn active py-1.5 px-2 rounded-lg text-xs font-semibold text-[#1D1D1F]">
+            <div class="grid grid-cols-3 gap-1 p-1 bg-[#F5F5F7] rounded-xl border border-gray-200/60">
+              <button type="button" data-unit="m" class="unit-seg-btn py-1.5 px-2 rounded-lg text-xs font-semibold text-[#6E6E73]">
                 Meters (m)
               </button>
-              <button type="button" data-unit="cm" class="unit-seg-btn py-1.5 px-2 rounded-lg text-xs font-semibold text-[#6E6E73] hover:text-[#1D1D1F]">
+              <button type="button" data-unit="cm" class="unit-seg-btn py-1.5 px-2 rounded-lg text-xs font-semibold text-[#6E6E73]">
                 Centimeters (cm)
               </button>
-              <button type="button" data-unit="mm" class="unit-seg-btn py-1.5 px-2 rounded-lg text-xs font-semibold text-[#6E6E73] hover:text-[#1D1D1F]">
+              <button type="button" data-unit="mm" class="unit-seg-btn active py-1.5 px-2 rounded-lg text-xs font-semibold text-[#1D1D1F]">
                 Millimeters (mm)
               </button>
             </div>
             <div class="mt-2 flex items-center justify-between text-[11px] text-[#6E6E73] bg-blue-50/60 px-2.5 py-1.5 rounded-lg border border-blue-100/80">
               <span>Pallet Limit Reference:</span>
-              <span id="pallet-ref-unit-label" class="font-semibold text-[#0071E3]">1.2m × 1.2m × 1.8m</span>
+              <span id="pallet-ref-unit-label" class="font-semibold text-[#0071E3]">1200mm × 1000mm × 1800mm</span>
             </div>
           </div>
 
+          <!-- Box Dimensions -->
           <div class="grid grid-cols-3 gap-3">
             <div>
               <label for="input-length" class="block text-xs font-medium text-[#6E6E73] mb-1">Length (L)</label>
               <div class="relative">
-                <input id="input-length" type="number" step="any" min="0.001" value="0.6"
+                <input id="input-length" type="number" step="any" min="1" value="785"
                   class="w-full pl-3 pr-8 py-2.5 bg-[#F5F5F7] border border-transparent focus:border-[#0071E3] focus:bg-white rounded-xl text-sm font-semibold text-[#1D1D1F] outline-none transition" />
-                <span class="unit-suffix absolute right-2.5 top-2.5 text-xs font-medium text-gray-400">m</span>
+                <span class="unit-suffix absolute right-2.5 top-2.5 text-xs font-medium text-gray-400">mm</span>
               </div>
             </div>
 
             <div>
               <label for="input-width" class="block text-xs font-medium text-[#6E6E73] mb-1">Width (W)</label>
               <div class="relative">
-                <input id="input-width" type="number" step="any" min="0.001" value="0.55"
+                <input id="input-width" type="number" step="any" min="1" value="345"
                   class="w-full pl-3 pr-8 py-2.5 bg-[#F5F5F7] border border-transparent focus:border-[#0071E3] focus:bg-white rounded-xl text-sm font-semibold text-[#1D1D1F] outline-none transition" />
-                <span class="unit-suffix absolute right-2.5 top-2.5 text-xs font-medium text-gray-400">m</span>
+                <span class="unit-suffix absolute right-2.5 top-2.5 text-xs font-medium text-gray-400">mm</span>
               </div>
             </div>
 
             <div>
               <label for="input-height" class="block text-xs font-medium text-[#6E6E73] mb-1">Height (H)</label>
               <div class="relative">
-                <input id="input-height" type="number" step="any" min="0.001" value="0.54"
+                <input id="input-height" type="number" step="any" min="1" value="530"
                   class="w-full pl-3 pr-8 py-2.5 bg-[#F5F5F7] border border-transparent focus:border-[#0071E3] focus:bg-white rounded-xl text-sm font-semibold text-[#1D1D1F] outline-none transition" />
-                <span class="unit-suffix absolute right-2.5 top-2.5 text-xs font-medium text-gray-400">m</span>
+                <span class="unit-suffix absolute right-2.5 top-2.5 text-xs font-medium text-gray-400">mm</span>
               </div>
             </div>
           </div>
 
-          <!-- Optional Target Quantity & Explicit Calculate Action -->
+          <!-- Target Quantity -->
           <div class="mt-4 pt-3.5 border-t border-gray-100 flex items-center justify-between gap-3">
             <div>
               <label for="input-qty" class="block text-xs font-medium text-[#1D1D1F]">Target Quantity <span class="text-[#6E6E73] font-normal">(Optional)</span></label>
@@ -257,12 +248,12 @@
             Calculate & Verify Limits
           </button>
 
-          <!-- Collapsible Pallet Limits Editor -->
+          <!-- Collapsible Pallet Dimensions -->
           <div class="mt-3 pt-3 border-t border-gray-100">
             <button id="toggle-pallet-settings" type="button" class="w-full flex items-center justify-between text-xs font-medium text-[#6E6E73] hover:text-[#1D1D1F] transition">
               <span>Pallet Dimensions & Max Height</span>
               <span class="flex items-center gap-1 text-[#0071E3]">
-                <span id="pallet-summary-inline">1.2m × 1.2m × 1.8m</span>
+                <span id="pallet-summary-inline">1200mm × 1000mm × 1800mm</span>
                 <svg id="pallet-chevron" class="w-3.5 h-3.5 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                 </svg>
@@ -271,55 +262,122 @@
 
             <div id="pallet-settings-panel" class="hidden grid-cols-3 gap-2.5 mt-3">
               <div>
-                <label class="block text-[11px] text-[#6E6E73] mb-1">Pallet L (<span class="unit-suffix">m</span>)</label>
-                <input id="pallet-l" type="number" step="any" min="0.1" value="1.2"
+                <label class="block text-[11px] text-[#6E6E73] mb-1">Pallet L (<span class="unit-suffix">mm</span>)</label>
+                <input id="pallet-l" type="number" step="any" min="100" value="1200"
                   class="w-full px-2.5 py-1.5 bg-[#F5F5F7] rounded-lg text-xs font-semibold text-[#1D1D1F] outline-none focus:ring-1 focus:ring-[#0071E3]" />
               </div>
               <div>
-                <label class="block text-[11px] text-[#6E6E73] mb-1">Pallet W (<span class="unit-suffix">m</span>)</label>
-                <input id="pallet-w" type="number" step="any" min="0.1" value="1.2"
+                <label class="block text-[11px] text-[#6E6E73] mb-1">Pallet W (<span class="unit-suffix">mm</span>)</label>
+                <input id="pallet-w" type="number" step="any" min="100" value="1000"
                   class="w-full px-2.5 py-1.5 bg-[#F5F5F7] rounded-lg text-xs font-semibold text-[#1D1D1F] outline-none focus:ring-1 focus:ring-[#0071E3]" />
               </div>
               <div>
-                <label class="block text-[11px] text-[#6E6E73] mb-1">Max H (<span class="unit-suffix">m</span>)</label>
-                <input id="pallet-max-h" type="number" step="any" min="0.1" value="1.8"
+                <label class="block text-[11px] text-[#6E6E73] mb-1">Max H (<span class="unit-suffix">mm</span>)</label>
+                <input id="pallet-max-h" type="number" step="any" min="100" value="1800"
                   class="w-full px-2.5 py-1.5 bg-[#F5F5F7] rounded-lg text-xs font-semibold text-[#1D1D1F] outline-none focus:ring-1 focus:ring-[#0071E3]" />
               </div>
             </div>
           </div>
         </section>
 
-        <!-- 2. Orientation Selector Cards -->
+        <!-- Orientation Selector Cards -->
         <section class="space-y-2.5">
           <div class="flex items-center justify-between px-1">
             <div>
-              <h2 class="text-sm font-semibold text-[#1D1D1F]">2. Choose Side Facing Up</h2>
-              <p class="text-xs text-[#6E6E73]">Select orientation to inspect layout</p>
+              <h2 class="text-sm font-semibold text-[#1D1D1F]">2. Choose Orientation</h2>
+              <p class="text-xs text-[#6E6E73]">Select side facing up</p>
             </div>
             <span class="text-[11px] font-medium text-[#0071E3]">3 Orientations</span>
           </div>
 
-          <div id="orientation-cards-container" class="space-y-2.5">
-            <!-- Dynamically injected orientation cards -->
-          </div>
+          <div id="orientation-cards-container" class="space-y-2.5"></div>
         </section>
 
-        <!-- 3. Step-by-Step Loading Plan Summary -->
+        <!-- Loading & Centering Summary -->
         <section class="apple-card p-5">
           <h3 class="text-sm font-semibold text-[#1D1D1F] mb-2.5 flex items-center gap-2">
             <svg class="w-4 h-4 text-[#0071E3]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            Loading & Stability Summary
+            Centering & Stability Summary
           </h3>
-          <div id="loading-plan-details" class="text-xs text-[#424245] space-y-2 leading-relaxed">
-            <!-- Populated via JS -->
+          <div id="loading-plan-details" class="text-xs text-[#424245] space-y-2 leading-relaxed"></div>
+        </section>
+
+        <!-- Pallet Presets & Extra Settings Section -->
+        <section class="apple-card p-5 space-y-4">
+          <div>
+            <h2 class="text-sm font-semibold text-[#1D1D1F]">Pallet Size Presets</h2>
+            <div class="flex flex-wrap gap-2 mt-2">
+              <button type="button" data-p="1200,800" class="preset-btn px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-[#F5F5F7] hover:bg-gray-200 text-[#1D1D1F] transition">EUR 1200×800</button>
+              <button type="button" data-p="1200,1000" class="preset-btn px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-[#F5F5F7] hover:bg-gray-200 text-[#1D1D1F] transition">UK/GMA 1200×1000</button>
+              <button type="button" data-p="1016,1219" class="preset-btn px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-[#F5F5F7] hover:bg-gray-200 text-[#1D1D1F] transition">40×48 in</button>
+              <button type="button" id="preset-custom" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-[#F5F5F7] hover:bg-gray-200 text-[#1D1D1F] transition">Custom</button>
+            </div>
+          </div>
+
+          <div>
+            <h2 class="text-sm font-semibold text-[#1D1D1F]">Stability &amp; Center of Gravity</h2>
+            <p id="stability-summary" class="text-xs text-[#424245] mt-2 leading-relaxed">Calculated from current arrangement.</p>
+          </div>
+
+          <div>
+            <h2 class="text-sm font-semibold text-[#1D1D1F]">Weight Limits <span class="font-normal text-[#6E6E73]">(kg)</span></h2>
+            <div class="grid grid-cols-3 gap-2 mt-2">
+              <div>
+                <label class="block text-[10px] text-[#6E6E73] mb-0.5">Box Weight</label>
+                <input id="w-box" type="number" min="0" step="any" value="21" class="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-[#0071E3]" />
+              </div>
+              <div>
+                <label class="block text-[10px] text-[#6E6E73] mb-0.5">Pallet Max Load</label>
+                <input id="w-load" type="number" min="0" step="any" placeholder="Pallet max" class="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-[#0071E3]" />
+              </div>
+              <div>
+                <label class="block text-[10px] text-[#6E6E73] mb-0.5">Layer Max</label>
+                <input id="w-layer" type="number" min="0" step="any" placeholder="Layer max" class="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-[#0071E3]" />
+              </div>
+            </div>
+            <p id="weight-summary" class="text-xs text-[#424245] mt-2 leading-relaxed"></p>
+          </div>
+
+          <div>
+            <label class="flex items-center gap-2 text-xs text-[#424245] cursor-pointer">
+              <input id="auto-limit" type="checkbox" class="rounded border-gray-300 text-[#0071E3] focus:ring-[#0071E3]" />
+              Auto-limit layers to a safe height
+            </label>
+          </div>
+
+          <div>
+            <h2 class="text-sm font-semibold text-[#1D1D1F]">Layer Stacking Pattern</h2>
+            <select id="layer-pattern" class="mt-2 w-full text-xs border border-gray-200 rounded-lg px-2.5 py-2 bg-white outline-none focus:border-[#0071E3]">
+              <option value="column">Column (Centered, standard uniform layout)</option>
+              <option value="rot90">Rotate even layers 90° (Interlocked)</option>
+              <option value="flip">Staggered (Alternate layers shifted to opposite corners)</option>
+            </select>
+          </div>
+
+          <div>
+            <h2 class="text-sm font-semibold text-[#1D1D1F]">Shipment Check</h2>
+            <input id="ship-total" type="number" min="1" placeholder="Total units to ship" class="mt-2 w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 outline-none focus:border-[#0071E3]" />
+            <p id="ship-result" class="text-xs text-[#424245] mt-2 leading-relaxed"></p>
+          </div>
+
+          <div>
+            <h2 class="text-sm font-semibold text-[#1D1D1F]">Export Loading Documents</h2>
+            <div class="flex gap-2 mt-2">
+              <button id="btn-export-sheet" class="flex-1 px-2.5 py-2 text-xs font-semibold rounded-xl bg-[#F5F5F7] hover:bg-gray-200 text-[#1D1D1F] transition flex items-center justify-center gap-1">
+                Print Loading Sheet
+              </button>
+              <button id="btn-export-csv" class="flex-1 px-2.5 py-2 text-xs font-semibold rounded-xl bg-[#F5F5F7] hover:bg-gray-200 text-[#1D1D1F] transition flex items-center justify-center gap-1">
+                Download CSV
+              </button>
+            </div>
           </div>
         </section>
 
       </div>
 
-      <!-- RIGHT MAIN STAGE: KPIs, 3D Interactive Canvas & 2D SVG Engineering Drawings (8 cols) -->
+      <!-- RIGHT MAIN STAGE: KPIs, 3D Canvas & 2D Diagrams -->
       <div class="lg:col-span-8 space-y-5">
 
         <!-- KPI Summary Bar -->
@@ -328,49 +386,49 @@
             <p class="text-xs font-medium text-[#6E6E73]">Total Packed</p>
             <div class="flex items-baseline gap-1.5 mt-1">
               <span id="kpi-total-items" class="text-2xl font-bold text-[#1D1D1F]">12</span>
-              <span id="kpi-items-sub" class="text-xs text-[#6E6E73]">items (4/layer)</span>
+              <span id="kpi-items-sub" class="text-xs text-[#6E6E73]">items</span>
             </div>
           </div>
 
           <div class="apple-card p-4">
             <p class="text-xs font-medium text-[#6E6E73]">Total Stack Height</p>
             <div class="flex items-baseline gap-1.5 mt-1">
-              <span id="kpi-stack-height" class="text-2xl font-bold text-[#1D1D1F]">1.62m</span>
-              <span id="kpi-height-limit" class="text-xs font-medium text-emerald-600">/ 1.80m max</span>
+              <span id="kpi-stack-height" class="text-2xl font-bold text-[#1D1D1F]">1590 mm</span>
+              <span id="kpi-height-limit" class="text-xs font-medium text-emerald-600">/ 1800 mm max</span>
             </div>
           </div>
 
           <div class="apple-card p-4">
-            <p class="text-xs font-medium text-[#6E6E73]">Base Area Used</p>
+            <p class="text-xs font-medium text-[#6E6E73]">Base Centering</p>
             <div class="flex items-baseline gap-1.5 mt-1">
-              <span id="kpi-base-util" class="text-2xl font-bold text-[#0071E3]">91.7%</span>
+              <span id="kpi-base-util" class="text-2xl font-bold text-[#0071E3]">54.5%</span>
               <span id="kpi-layers-count" class="text-xs text-[#6E6E73]">3 layers</span>
             </div>
           </div>
 
           <div class="apple-card p-4">
-            <p class="text-xs font-medium text-[#6E6E73]">Volume Efficiency</p>
+            <p class="text-xs font-medium text-[#6E6E73]">Total Load Weight</p>
             <div class="flex items-baseline gap-1.5 mt-1">
-              <span id="kpi-vol-util" class="text-2xl font-bold text-[#1D1D1F]">82.5%</span>
-              <span class="text-xs text-[#6E6E73]">of 2.59m³</span>
+              <span id="kpi-total-weight" class="text-2xl font-bold text-[#1D1D1F]">252 kg</span>
+              <span class="text-xs text-[#6E6E73]">(21 kg/box)</span>
             </div>
           </div>
         </div>
 
-        <!-- Interactive 3D Pallet View Card -->
+        <!-- Interactive 3D Model Card -->
         <section class="apple-card p-5">
           <div class="flex flex-wrap items-center justify-between gap-3 mb-3.5">
             <div>
               <div class="flex items-center gap-2">
                 <h2 class="text-base font-semibold text-[#1D1D1F]">Interactive 3D Pallet Model</h2>
                 <span id="active-orientation-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-[#0071E3]">
-                  Option A: 0.54m Up
+                  Option A: 530mm Up
                 </span>
               </div>
-              <p class="text-xs text-[#6E6E73] mt-0.5">Drag to orbit • Scroll or pinch to zoom • Dashed frame shows 1.8m height limit</p>
+              <p class="text-xs text-[#6E6E73] mt-0.5">Drag to orbit • Scroll to zoom • Dashed line shows max height envelope</p>
             </div>
 
-            <!-- 3D View Presets -->
+            <!-- View Presets -->
             <div id="camera-preset-group" class="flex items-center gap-1.5 bg-[#F5F5F7] p-1 rounded-xl">
               <button type="button" data-preset="iso" class="cam-preset-btn px-2.5 py-1 text-xs font-medium rounded-lg bg-white text-[#0071E3] shadow-sm transition">3D Iso</button>
               <button type="button" data-preset="top" class="cam-preset-btn px-2.5 py-1 text-xs font-medium rounded-lg text-[#6E6E73] hover:text-[#1D1D1F] transition">Top</button>
@@ -382,14 +440,14 @@
           <div id="canvas3d-wrapper">
             <canvas id="three-canvas"></canvas>
 
-            <!-- Interactive 3D Hover Inspection Tooltip -->
+            <!-- Hover Tooltip -->
             <div id="three-hover-tooltip" class="hidden absolute pointer-events-none z-20 bg-[#1D1D1F]/92 text-white backdrop-blur-md px-3 py-2 rounded-xl shadow-lg border border-white/10 text-[11px] leading-snug">
               <div id="tooltip-title" class="font-semibold text-blue-300">Layer 1 • Box #1</div>
-              <div id="tooltip-dims" class="text-gray-200 mt-0.5">Size: 0.60m × 0.55m × 0.54m</div>
-              <div id="tooltip-pos" class="text-gray-400 font-mono text-[10px] mt-0.5">Pos: (0.00m, 0.00m, 0.00m)</div>
+              <div id="tooltip-dims" class="text-gray-200 mt-0.5">Size: 785mm × 345mm × 530mm</div>
+              <div id="tooltip-pos" class="text-gray-400 font-mono text-[10px] mt-0.5">Origin: Centered</div>
             </div>
 
-            <!-- Floating Legend Overlay -->
+            <!-- Legend Overlay -->
             <div class="absolute bottom-3 left-3 bg-white/85 backdrop-blur-md px-3 py-2 rounded-xl border border-gray-200/70 text-[11px] text-[#424245] flex flex-wrap items-center gap-3 pointer-events-none">
               <span class="flex items-center gap-1.5">
                 <span class="w-2.5 h-2.5 rounded-sm bg-[#3B82F6] inline-block"></span> Odd Layer
@@ -398,12 +456,12 @@
                 <span class="w-2.5 h-2.5 rounded-sm bg-[#60A5FA] inline-block"></span> Even Layer
               </span>
               <span class="flex items-center gap-1.5">
-                <span class="w-2.5 h-2.5 rounded-sm border border-dashed border-amber-500 inline-block"></span> <span id="legend-max-h-text">Max Height (1.8m)</span>
+                <span class="w-2.5 h-2.5 rounded-sm border border-dashed border-amber-500 inline-block"></span> <span id="legend-max-h-text">Max Height Limit</span>
               </span>
             </div>
           </div>
 
-          <!-- Interactive 3D Controls Bar -->
+          <!-- Interactive Controls Bar -->
           <div class="mt-4 pt-3.5 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
             <!-- Layer Explosion Slider -->
             <div class="flex items-center gap-3">
@@ -426,12 +484,12 @@
           </div>
         </section>
 
-        <!-- 2D Engineering Sketch Diagrams (Top-Down & Side-Elevation SVGs) -->
+        <!-- 2D Engineering Diagrams -->
         <section class="apple-card p-5">
           <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
             <div>
               <h2 class="text-base font-semibold text-[#1D1D1F]">2D Engineering Layout Diagrams</h2>
-              <p class="text-xs text-[#6E6E73] mt-0.5">Exact footprint spacing, spare margins, and vertical clearance</p>
+              <p class="text-xs text-[#6E6E73] mt-0.5">Exact centered footprint spacing, margins, and vertical clearance</p>
             </div>
             <span id="svg-pattern-badge" class="text-xs font-medium px-2.5 py-1 rounded-lg bg-[#F5F5F7] text-[#1D1D1F]">
               Grid: 2 × 2 (4 boxes/layer)
@@ -439,24 +497,24 @@
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <!-- Top-Down View SVG Card -->
-            <div class="bg-[#FAFAFC] border border-gray-200/80 rounded-2xl p-4 flex flex-col">
-              <div class="flex items-center justify-between mb-2">
+            <!-- Top View SVG -->
+            <div class="bg-[#FAFAFC] border border-gray-200/80 rounded-2xl p-4 flex flex-col items-center">
+              <div class="w-full flex items-center justify-between mb-2">
                 <span class="text-xs font-semibold uppercase tracking-wider text-[#6E6E73]">Top-Down Layer Plan</span>
-                <span id="topdown-footprint-label" class="text-xs font-mono font-medium text-[#0071E3]">1.20m × 1.10m used</span>
+                <span id="topdown-footprint-label" class="text-xs font-mono font-medium text-[#0071E3]">785mm × 690mm used</span>
               </div>
-              <div class="flex-1 flex items-center justify-center min-h-[270px]">
+              <div class="w-full flex-1 flex items-center justify-center min-h-[270px]">
                 <svg id="svg-top-view" viewBox="0 0 340 340" class="w-full max-w-[320px] h-auto"></svg>
               </div>
             </div>
 
-            <!-- Side Elevation View SVG Card -->
-            <div class="bg-[#FAFAFC] border border-gray-200/80 rounded-2xl p-4 flex flex-col">
-              <div class="flex items-center justify-between mb-2">
+            <!-- Side Elevation SVG -->
+            <div class="bg-[#FAFAFC] border border-gray-200/80 rounded-2xl p-4 flex flex-col items-center">
+              <div class="w-full flex items-center justify-between mb-2">
                 <span class="text-xs font-semibold uppercase tracking-wider text-[#6E6E73]">Side Elevation Stack</span>
-                <span id="sideview-clearance-label" class="text-xs font-mono font-medium text-emerald-600">0.18m clearance</span>
+                <span id="sideview-clearance-label" class="text-xs font-mono font-medium text-emerald-600">210mm clearance</span>
               </div>
-              <div class="flex-1 flex items-center justify-center min-h-[270px]">
+              <div class="w-full flex-1 flex items-center justify-center min-h-[270px]">
                 <svg id="svg-side-view" viewBox="0 0 340 340" class="w-full max-w-[320px] h-auto"></svg>
               </div>
             </div>
@@ -467,8 +525,8 @@
     </div>
   </main>
 
-  <!-- Apple-Style Pop-Up Alert Modal for Maximum Height & Oversized Footprint -->
-  <div id="limit-alert-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="modal-alert-title">
+  <!-- Alert Modal -->
+  <div id="limit-alert-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" role="dialog" aria-modal="true">
     <div class="modal-animate bg-white w-full max-w-md rounded-2xl shadow-2xl border border-gray-200/80 overflow-hidden">
       <div class="p-6">
         <div class="flex items-start gap-3.5">
@@ -484,39 +542,32 @@
             </p>
           </div>
         </div>
-
-        <!-- Comparison Breakdown Box -->
-        <div id="modal-alert-comparison" class="mt-4 bg-[#F5F5F7] rounded-xl p-3.5 border border-gray-200/70 space-y-2 text-xs">
-          <!-- Populated dynamically -->
-        </div>
-
-        <!-- Action Buttons -->
-        <div id="modal-alert-actions" class="mt-5 flex flex-col sm:flex-row items-center justify-end gap-2.5">
-          <!-- Populated dynamically -->
-        </div>
+        <div id="modal-alert-comparison" class="mt-4 bg-[#F5F5F7] rounded-xl p-3.5 border border-gray-200/70 space-y-2 text-xs"></div>
+        <div id="modal-alert-actions" class="mt-5 flex flex-col sm:flex-row items-center justify-end gap-2.5"></div>
       </div>
     </div>
   </div>
 
   <script>
     /**
-     * =========================================================================
-     * PALLET ARRANGEMENT OPTIMIZER — APPLICATION STATE & PACKING ENGINE
-     * =========================================================================
+     * APP STATE & LOGIC
      */
-
     const UNIT_CONFIG = {
-      m:  { label: 'm',  toMeters: 1,     fromMeters: 1,    decimals: 2, palletDef: { l: 1.2,  w: 1.2,  maxH: 1.8  } },
-      cm: { label: 'cm', toMeters: 0.01,  fromMeters: 100,  decimals: 1, palletDef: { l: 120,  w: 120,  maxH: 180  } },
-      mm: { label: 'mm', toMeters: 0.001, fromMeters: 1000, decimals: 0, palletDef: { l: 1200, w: 1200, maxH: 1800 } }
+      m:  { label: 'm',  toMeters: 1,     fromMeters: 1,    decimals: 2 },
+      cm: { label: 'cm', toMeters: 0.01,  fromMeters: 100,  decimals: 1 },
+      mm: { label: 'mm', toMeters: 0.001, fromMeters: 1000, decimals: 0 }
     };
 
     const state = {
-      unit: 'm', // 'm' | 'cm' | 'mm'
-      // Internal product & pallet dimensions stored in canonical METERS for 3D & math consistency
-      product: { l: 0.60, w: 0.55, h: 0.54 },
-      targetQty: null, // null means pack maximum possible
-      pallet: { l: 1.20, w: 1.20, maxH: 1.80 },
+      unit: 'mm',
+      product: { l: 0.785, w: 0.345, h: 0.53 }, // stored canonical in meters
+      targetQty: null,
+      pallet: { l: 1.20, w: 1.00, maxH: 1.80 },
+      boxWeight: 21,
+      maxLoad: null,
+      maxLayerW: null,
+      autoLimit: false,
+      layerPattern: 'column',
       orientations: [],
       selectedIndex: 0,
       explodeFactor: 0,
@@ -524,33 +575,13 @@
       lastAlertSignature: ''
     };
 
-    /**
-     * Formats a canonical meter measurement into the currently selected display unit
-     */
     function formatDim(metersVal, includeUnit = true) {
       const cfg = UNIT_CONFIG[state.unit];
       const converted = metersVal * cfg.fromMeters;
-      // Strip unnecessary trailing .00 or .0 while preserving precision
       const rounded = Number(converted.toFixed(cfg.decimals));
       return includeUnit ? `${rounded}${cfg.label}` : `${rounded}`;
     }
 
-    /**
-     * Formats cubic meters into clean volume string
-     */
-    function formatVolume(cubicMeters) {
-      if (state.unit === 'm') {
-        return `${cubicMeters.toFixed(2)}m³`;
-      } else if (state.unit === 'cm') {
-        return `${Math.round(cubicMeters * 1e6).toLocaleString()}cm³`;
-      } else {
-        return `${Math.round(cubicMeters * 1e9).toLocaleString()}mm³`;
-      }
-    }
-
-    /**
-     * Displays a non-blocking banner notification at the top of the workspace
-     */
     function showNotification(message, type = 'warning') {
       const banner = document.getElementById('toast-banner');
       const content = document.getElementById('toast-content');
@@ -568,372 +599,96 @@
       document.getElementById('toast-banner').classList.add('hidden');
     }
 
-    /**
-     * Shows the Apple-style Pop-Up Alert Modal when height or footprint limits are exceeded
-     */
-    function openLimitAlertModal({ title, message, rows, validAlternativeIdx = null }) {
-      const modal = document.getElementById('limit-alert-modal');
-      document.getElementById('modal-alert-title').textContent = title;
-      document.getElementById('modal-alert-message').textContent = message;
+    function switchUnit(newUnit) {
+      if (!UNIT_CONFIG[newUnit] || state.unit === newUnit) return;
+      const ratio = UNIT_CONFIG[state.unit].toMeters / UNIT_CONFIG[newUnit].toMeters;
+      ['input-length', 'input-width', 'input-height', 'pallet-l', 'pallet-w', 'pallet-max-h'].forEach((id) => {
+        const el = document.getElementById(id);
+        const v = parseFloat(el.value);
+        if (!isNaN(v)) el.value = Number((v * ratio).toFixed(2));
+      });
+      state.unit = newUnit;
 
-      const compEl = document.getElementById('modal-alert-comparison');
-      compEl.innerHTML = rows.map(r => `
-        <div class="flex items-center justify-between">
-          <span class="text-[#6E6E73]">${r.label}</span>
-          <span class="font-semibold ${r.highlight ? 'text-red-600' : 'text-[#1D1D1F]'}">${r.value}</span>
-        </div>
-      `).join('');
+      document.querySelectorAll('.unit-seg-btn').forEach((btn) => {
+        const isMatch = btn.dataset.unit === newUnit;
+        btn.classList.toggle('active', isMatch);
+        btn.classList.toggle('text-[#1D1D1F]', isMatch);
+        btn.classList.toggle('text-[#6E6E73]', !isMatch);
+      });
 
-      const actionsEl = document.getElementById('modal-alert-actions');
-      actionsEl.innerHTML = '';
+      document.querySelectorAll('.unit-suffix').forEach((el) => {
+        el.textContent = newUnit;
+      });
 
-      if (validAlternativeIdx !== null && state.orientations[validAlternativeIdx]) {
-        const alt = state.orientations[validAlternativeIdx];
-        const switchBtn = document.createElement('button');
-        switchBtn.type = 'button';
-        switchBtn.className = 'w-full sm:w-auto px-4 py-2 bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold rounded-xl shadow-sm transition';
-        switchBtn.textContent = `Switch to ${alt.code} (${formatDim(alt.upDim)} Up)`;
-        switchBtn.onclick = () => {
-          state.selectedIndex = validAlternativeIdx;
-          closeLimitAlertModal();
-          updateAllViews();
-        };
-        actionsEl.appendChild(switchBtn);
-      }
-
-      const dismissBtn = document.createElement('button');
-      dismissBtn.type = 'button';
-      dismissBtn.className = 'w-full sm:w-auto px-4 py-2 bg-[#F5F5F7] hover:bg-gray-200/80 text-[#1D1D1F] text-xs font-semibold rounded-xl transition';
-      dismissBtn.textContent = 'Dismiss & Adjust Dimensions';
-      dismissBtn.onclick = () => {
-        closeLimitAlertModal();
-      };
-      actionsEl.appendChild(dismissBtn);
-
-      modal.classList.remove('hidden');
-    }
-
-    function closeLimitAlertModal() {
-      document.getElementById('limit-alert-modal').classList.add('hidden');
-    }
-
-    /**
-     * Evaluates whether the current configuration violates height or footprint rules
-     * and opens the pop-up modal cleanly (triggered on blur, Enter, Calculate click, or orientation click).
-     */
-    function checkAndTriggerLimitModal(forceShow = false) {
-      const opt = state.orientations[state.selectedIndex];
-      if (!opt) return;
-
-      const { l: pL, w: pW, maxH: pMaxH } = state.pallet;
-      const validAltIdx = state.orientations.findIndex((o, idx) => idx !== state.selectedIndex && o.isValid);
-
-      let violation = null;
-
-      // Case A: Single layer height exceeds maximum allowable stack height
-      if (opt.upDim > pMaxH + 1e-6) {
-        violation = {
-          sig: `H_${opt.id}_${opt.upDim}_${pMaxH}`,
-          title: 'Maximum Stack Height Exceeded',
-          message: `In ${opt.code}, standing the ${formatDim(opt.upDim)} side vertically exceeds the pallet's maximum allowable height of ${formatDim(pMaxH)}.`,
-          rows: [
-            { label: 'Selected Box Height (1 Layer):', value: formatDim(opt.upDim), highlight: true },
-            { label: 'Pallet Maximum Stack Height:', value: formatDim(pMaxH), highlight: false },
-            { label: 'Height Over Limit:', value: `+${formatDim(opt.upDim - pMaxH)}`, highlight: true }
-          ],
-          validAlternativeIdx: validAltIdx !== -1 ? validAltIdx : null
-        };
-      }
-      // Case B: Product footprint exceeds pallet base dimensions (0 items fit per layer)
-      else if (opt.itemsPerLayer === 0) {
-        violation = {
-          sig: `B_${opt.id}_${opt.baseA}_${opt.baseB}_${pL}_${pW}`,
-          title: 'Product Exceeds Pallet Base Footprint',
-          message: `A single box footprint of ${formatDim(opt.baseA)} × ${formatDim(opt.baseB)} is too large to fit onto the ${formatDim(pL)} × ${formatDim(pW)} pallet base.`,
-          rows: [
-            { label: 'Box Base Footprint:', value: `${formatDim(opt.baseA)} × ${formatDim(opt.baseB)}`, highlight: true },
-            { label: 'Pallet Base Dimensions:', value: `${formatDim(pL)} × ${formatDim(pW)}`, highlight: false }
-          ],
-          validAlternativeIdx: validAltIdx !== -1 ? validAltIdx : null
-        };
-      }
-      // Case C: Target Quantity requires more layers than fit within max stack height
-      else if (state.targetQty && state.targetQty > opt.maxCapacity) {
-        const reqLayers = Math.ceil(state.targetQty / opt.itemsPerLayer);
-        const reqHeight = reqLayers * opt.upDim;
-        violation = {
-          sig: `Q_${opt.id}_${state.targetQty}_${opt.maxCapacity}`,
-          title: 'Target Quantity Exceeds Height Limit',
-          message: `Packing ${state.targetQty} items (${opt.itemsPerLayer}/layer) requires ${reqLayers} layers (${formatDim(reqHeight)}), which exceeds the ${formatDim(pMaxH)} height limit.`,
-          rows: [
-            { label: `Required Height (${state.targetQty} items):`, value: formatDim(reqHeight), highlight: true },
-            { label: `Pallet Max Height (${opt.maxCapacity} items max):`, value: formatDim(pMaxH), highlight: false },
-            { label: 'Excess Stack Height:', value: `+${formatDim(reqHeight - pMaxH)}`, highlight: true }
-          ],
-          validAlternativeIdx: null
-        };
-      }
-
-      if (violation) {
-        if (forceShow || state.lastAlertSignature !== violation.sig) {
-          state.lastAlertSignature = violation.sig;
-          openLimitAlertModal(violation);
-        }
-      } else {
-        state.lastAlertSignature = '';
-      }
-    }
-
-    /**
-     * 2D Single-Layer Packing Solver
-     * Evaluates pure grid orientations as well as hybrid split-row / pinwheel
-     * combinations on a (palletL x palletW) base to maximize box count per layer.
-     */
-    function guillotinePack(a, b, L, W) {
-      const U = 1e-4, A = Math.round(a / U), B = Math.round(b / U), PL = Math.round(L / U), PW = Math.round(W / U);
-      const pts = (M) => { const s = new Set(); for (let i = 0; i * A <= M; i++) for (let j = 0; i * A + j * B <= M; j++) s.add(i * A + j * B); return [...s].sort((p, q) => p - q); };
-      const xs = pts(PL), ys = pts(PW);
-      if (xs.length * ys.length > 30000) return null;
-      const snap = (arr, v) => { let lo = 0, hi = arr.length - 1; while (lo < hi) { const m = (lo + hi + 1) >> 1; if (arr[m] <= v) lo = m; else hi = m - 1; } return lo; };
-      const memo = new Map();
-      const f = (xi, yi) => {
-        const k = xi * 100000 + yi, hit = memo.get(k); if (hit) return hit;
-        const x = xs[xi], y = ys[yi];
-        let r = { v: 0, t: 0 };
-        if ((x >= A && y >= B) || (x >= B && y >= A)) r = { v: 1, t: 0 };
-        for (let ci = 1; ci <= xi && xs[ci] * 2 <= x; ci++) { const v = f(ci, yi).v + f(snap(xs, x - xs[ci]), yi).v; if (v > r.v) r = { v, t: 1, c: ci }; }
-        for (let ci = 1; ci <= yi && ys[ci] * 2 <= y; ci++) { const v = f(xi, ci).v + f(xi, snap(ys, y - ys[ci])).v; if (v > r.v) r = { v, t: 2, c: ci }; }
-        memo.set(k, r); return r;
-      };
-      const boxes = [];
-      const place = (xi, yi, ox, oy) => {
-        const r = f(xi, yi), x = xs[xi], y = ys[yi];
-        if (r.v === 0) return;
-        if (r.t === 0) { const up = x >= A && y >= B; boxes.push({ x: ox * U, y: oy * U, w: (up ? A : B) * U, d: (up ? B : A) * U, rotated: !up }); return; }
-        if (r.t === 1) { const c = xs[r.c]; place(r.c, yi, ox, oy); place(snap(xs, x - c), yi, ox + c, oy); }
-        else { const c = ys[r.c]; place(xi, r.c, ox, oy); place(xi, snap(ys, y - c), ox, oy + c); }
-      };
-      place(xs.length - 1, ys.length - 1, 0, 0);
-      if (!boxes.length) return null;
-      return { boxes, count: boxes.length,
-        usedL: Math.max(...boxes.map((q) => q.x + q.w)), usedW: Math.max(...boxes.map((q) => q.y + q.d)),
-        cols: new Set(boxes.map((q) => Math.round(q.x * 1e4))).size, rows: new Set(boxes.map((q) => Math.round(q.y * 1e4))).size,
-        patternName: `Optimal guillotine layout (${boxes.length}/layer)` };
+      readInputsAndUpdate(false);
     }
 
     function solve2DLayerPacking(boxA, boxB, palletL, palletW) {
       const candidates = [];
-
-      // Helper to build uniform grid boxes
-      function buildUniformGrid(itemL, itemW, label) {
-        const cols = Math.floor((palletL + 1e-6) / itemL);
-        const rows = Math.floor((palletW + 1e-6) / itemW);
+      function buildGrid(l, w, label) {
+        const cols = Math.floor((palletL + 1e-6) / l);
+        const rows = Math.floor((palletW + 1e-6) / w);
         const boxes = [];
+        const totalUsedL = cols * l;
+        const totalUsedW = rows * w;
+        
+        // Exact Centering Logic
+        const offsetX = (palletL - totalUsedL) / 2;
+        const offsetY = (palletW - totalUsedW) / 2;
+
         for (let r = 0; r < rows; r++) {
           for (let c = 0; c < cols; c++) {
             boxes.push({
-              x: c * itemL,
-              y: r * itemW,
-              w: itemL,
-              d: itemW,
-              rotated: itemL !== boxA
+              x: offsetX + c * l,
+              y: offsetY + r * w,
+              w: l,
+              d: w,
+              rotated: l !== boxA
             });
           }
         }
         return {
           boxes,
           count: boxes.length,
-          usedL: cols * itemL,
-          usedW: rows * itemW,
+          usedL: totalUsedL,
+          usedW: totalUsedW,
           cols,
           rows,
-          patternName: `${cols} × ${rows} Uniform Grid (${label})`
+          offsetX,
+          offsetY,
+          patternName: `${cols} × ${rows} Grid (${label})`
         };
       }
 
-      // 1. Standard orientation (boxA along Pallet L, boxB along Pallet W)
-      candidates.push(buildUniformGrid(boxA, boxB, `{{${boxA}}} × {{${boxB}}}`));
-
-      // 2. Rotated 90° orientation (boxB along Pallet L, boxA along Pallet W)
+      candidates.push(buildGrid(boxA, boxB, 'Standard'));
       if (Math.abs(boxA - boxB) > 1e-5) {
-        candidates.push(buildUniformGrid(boxB, boxA, `{{${boxB}}} × {{${boxA}}}`));
+        candidates.push(buildGrid(boxB, boxA, 'Rotated 90°'));
       }
 
-      // 3. Hybrid Split along Pallet Width (Top zone: boxA x boxB, Bottom zone: boxB x boxA)
-      const maxRows1 = Math.floor((palletW + 1e-6) / boxB);
-      for (let r1 = 1; r1 <= maxRows1; r1++) {
-        const usedW1 = r1 * boxB;
-        const remW = palletW - usedW1;
-        const cols1 = Math.floor((palletL + 1e-6) / boxA);
-        const cols2 = Math.floor((palletL + 1e-6) / boxB);
-        const rows2 = Math.floor((remW + 1e-6) / boxA);
-
-        if (cols1 > 0 && cols2 > 0 && rows2 > 0) {
-          const boxes = [];
-          for (let r = 0; r < r1; r++) {
-            for (let c = 0; c < cols1; c++) {
-              boxes.push({ x: c * boxA, y: r * boxB, w: boxA, d: boxB, rotated: false });
-            }
-          }
-          for (let r = 0; r < rows2; r++) {
-            for (let c = 0; c < cols2; c++) {
-              boxes.push({ x: c * boxB, y: usedW1 + r * boxA, w: boxB, d: boxA, rotated: true });
-            }
-          }
-          candidates.push({
-            boxes,
-            count: boxes.length,
-            usedL: Math.max(cols1 * boxA, cols2 * boxB),
-            usedW: usedW1 + rows2 * boxA,
-            cols: cols1,
-            rows: r1 + rows2,
-            patternName: `Mixed Split Layout (${boxes.length}/layer)`
-          });
-        }
-      }
-
-      // 4. Hybrid Split along Pallet Length (Left zone: boxA x boxB, Right zone: boxB x boxA)
-      const maxCols1 = Math.floor((palletL + 1e-6) / boxA);
-      for (let c1 = 1; c1 <= maxCols1; c1++) {
-        const usedL1 = c1 * boxA;
-        const remL = palletL - usedL1;
-        const rows1 = Math.floor((palletW + 1e-6) / boxB);
-        const cols2 = Math.floor((remL + 1e-6) / boxB);
-        const rows2 = Math.floor((palletW + 1e-6) / boxA);
-
-        if (rows1 > 0 && cols2 > 0 && rows2 > 0) {
-          const boxes = [];
-          for (let r = 0; r < rows1; r++) {
-            for (let c = 0; c < c1; c++) {
-              boxes.push({ x: c * boxA, y: r * boxB, w: boxA, d: boxB, rotated: false });
-            }
-          }
-          for (let r = 0; r < rows2; r++) {
-            for (let c = 0; c < cols2; c++) {
-              boxes.push({ x: usedL1 + c * boxB, y: r * boxA, w: boxB, d: boxA, rotated: true });
-            }
-          }
-          candidates.push({
-            boxes,
-            count: boxes.length,
-            usedL: usedL1 + cols2 * boxB,
-            usedW: Math.max(rows1 * boxB, rows2 * boxA),
-            cols: c1 + cols2,
-            rows: rows1,
-            patternName: `Mixed Column Layout (${boxes.length}/layer)`
-          });
-        }
-      }
-
-      // 5. Pinwheel check (e.g., 4 boxes arranged clockwise around a center void)
-      if (boxA + boxB <= palletL + 1e-6 && boxA + boxB <= palletW + 1e-6) {
-        const pinwheelBoxes = [
-          { x: 0, y: 0, w: boxA, d: boxB, rotated: false },
-          { x: boxA, y: 0, w: boxB, d: boxA, rotated: true },
-          { x: boxB, y: boxA, w: boxA, d: boxB, rotated: false },
-          { x: 0, y: boxB, w: boxB, d: boxA, rotated: true }
-        ];
-        candidates.push({
-          boxes: pinwheelBoxes,
-          count: 4,
-          usedL: boxA + boxB,
-          usedW: boxA + boxB,
-          cols: 2,
-          rows: 2,
-          patternName: `Pinwheel Interlock (4/layer)`
-        });
-      }
-
-      const gp = guillotinePack(boxA, boxB, palletL, palletW);
-      if (gp) candidates.push(gp);
-      // Pick the candidate with the highest box count; tie-break by tighter footprint
-      candidates.sort((a, b) => {
-        if (b.count !== a.count) return b.count - a.count;
-        const areaA = a.usedL * a.usedW;
-        const areaB = b.usedL * b.usedW;
-        return areaA - areaB;
-      });
-
+      candidates.sort((a, b) => b.count - a.count);
       return candidates[0];
-    }
-
-    /**
-     * Computes all 3 vertical orientations (Height UP, Width UP, Length UP)
-     */
-    function addMixedOption() {
-      const os = state.orientations.filter((o) => o.isValid);
-      const H = Math.floor(state.pallet.maxH * 1000 + 1e-6);
-      if (os.length < 2 || H > 6000) return;
-      const hs = os.map((o) => Math.ceil(o.upDim * 1000 - 1e-6));
-      const dp = new Array(H + 1).fill(0), ch = new Array(H + 1).fill(-1);
-      for (let h = 1; h <= H; h++) {
-        dp[h] = dp[h - 1];
-        os.forEach((o, i) => { if (h >= hs[i] && dp[h - hs[i]] + o.itemsPerLayer > dp[h]) { dp[h] = dp[h - hs[i]] + o.itemsPerLayer; ch[h] = i; } });
-      }
-      if (dp[H] <= Math.max(...os.map((o) => o.maxCapacity))) return;
-      const picks = []; let h = H;
-      while (h > 0) { if (ch[h] === -1) h--; else { picks.push(os[ch[h]]); h -= hs[ch[h]]; } }
-      picks.sort((p, q) => q.itemsPerLayer - p.itemsPerLayer || p.upDim - q.upDim);
-      const layers = picks.map((o) => ({ pack: o.layerPack, up: o.upDim, base: [o.baseA, o.baseB] }));
-      const total = picks.reduce((s, o) => s + o.itemsPerLayer, 0), th = layers.reduce((s, q) => s + q.up, 0);
-      const { l, w, h: ph } = state.product;
-      state.orientations.push({ ...picks[0], id: 'opt-mix', code: 'Option D', mixed: true, layers, maxLayers: layers.length,
-        maxCapacity: total, actualItems: total, actualLayers: layers.length, totalHeight: th,
-        clearance: Math.max(0, state.pallet.maxH - th), canInterlockLayer: false, isValid: true,
-        volUtilPct: (total * l * w * ph) / (state.pallet.l * state.pallet.w * state.pallet.maxH) * 100 });
-    }
-
-    function layerSpec(opt, lyr) {
-      if (opt.layers) { let y0 = 0; for (let i = 0; i < lyr; i++) y0 += opt.layers[i].up; const L = opt.layers[lyr]; return { pack: L.pack, up: L.up, y0, base: L.base }; }
-      return { pack: opt.layerPack, up: opt.upDim, y0: lyr * opt.upDim, base: [opt.baseA, opt.baseB] };
     }
 
     function calculateAllOrientations() {
       const { l, w, h } = state.product;
       const { l: pL, w: pW, maxH: pMaxH } = state.pallet;
+      const wCapTotal = state.boxWeight && state.maxLoad ? Math.floor(state.maxLoad / state.boxWeight + 1e-9) : Infinity;
 
-      // Sort unique or labeled axes so user always sees the 3 physical choices clearly
-      const definitions = [
-        {
-          id: 'opt-h',
-          code: 'Option A',
-          axisLabel: 'Height Side Up',
-          upDim: h,
-          baseA: l,
-          baseB: w
-        },
-        {
-          id: 'opt-w',
-          code: 'Option B',
-          axisLabel: 'Width Side Up',
-          upDim: w,
-          baseA: l,
-          baseB: h
-        },
-        {
-          id: 'opt-l',
-          code: 'Option C',
-          axisLabel: 'Length Side Up',
-          upDim: l,
-          baseA: w,
-          baseB: h
-        }
+      const defs = [
+        { id: 'opt-h', code: 'Option A', upDim: h, baseA: l, baseB: w },
+        { id: 'opt-w', code: 'Option B', upDim: w, baseA: l, baseB: h },
+        { id: 'opt-l', code: 'Option C', upDim: l, baseA: w, baseB: h }
       ];
 
-      // Sort by lowest stack height first (most stable default), while keeping Option A/B/C labels clean
-      const prevSelectedId = state.orientations[state.selectedIndex] && state.orientations[state.selectedIndex].id;
-      definitions.sort((a, b) => a.upDim - b.upDim);
-      const optionLetters = ['Option A', 'Option B', 'Option C'];
-
-      state.orientations = definitions.map((def, idx) => {
-        const layerPack = solve2DLayerPacking(def.baseA, def.baseB, pL, pW);
+      state.orientations = defs.map((def, idx) => {
+        let layerPack = solve2DLayerPacking(def.baseA, def.baseB, pL, pW);
         const itemsPerLayer = layerPack.count;
         const maxLayers = itemsPerLayer > 0 ? Math.floor((pMaxH + 1e-6) / def.upDim) : 0;
-        const maxCapacity = itemsPerLayer * maxLayers;
+        const spaceCap = itemsPerLayer * maxLayers;
+        const maxCapacity = Math.min(spaceCap, wCapTotal);
 
-        // Apply Target Quantity if user entered one
         let actualItems = maxCapacity;
-        let actualLayers = maxLayers;
+        let actualLayers = itemsPerLayer > 0 ? Math.ceil(actualItems / itemsPerLayer) : 0;
         if (state.targetQty && state.targetQty > 0 && maxCapacity > 0) {
           actualItems = Math.min(state.targetQty, maxCapacity);
           actualLayers = Math.ceil(actualItems / itemsPerLayer);
@@ -941,21 +696,14 @@
 
         const totalHeight = actualLayers * def.upDim;
         const clearance = Math.max(0, pMaxH - totalHeight);
-
         const palletArea = pL * pW;
         const usedBaseArea = itemsPerLayer * (def.baseA * def.baseB);
         const baseUtilPct = palletArea > 0 ? (usedBaseArea / palletArea) * 100 : 0;
-
-        const maxPalletVol = pL * pW * pMaxH;
-        const packedVol = actualItems * (l * w * h);
-        const volUtilPct = maxPalletVol > 0 ? (packedVol / maxPalletVol) * 100 : 0;
-
-        // Check if 90-degree interlocking of the whole layer still fits inside pallet base
         const canInterlockLayer = (layerPack.usedW <= pL + 1e-6) && (layerPack.usedL <= pW + 1e-6);
 
         return {
           ...def,
-          code: optionLetters[idx],
+          code: ['Option A', 'Option B', 'Option C'][idx],
           layerPack,
           itemsPerLayer,
           maxLayers,
@@ -965,31 +713,90 @@
           totalHeight,
           clearance,
           baseUtilPct,
-          volUtilPct,
           canInterlockLayer,
           isValid: itemsPerLayer > 0 && maxLayers > 0
         };
       });
-      addMixedOption();
-      const keepIdx = state.orientations.findIndex((o) => o.id === prevSelectedId);
-      if (keepIdx >= 0) state.selectedIndex = keepIdx;
+
+      applyAutoLimit();
     }
 
-    /**
-     * =========================================================================
-     * UI RENDERING (ORIENTATION CARDS, KPIS, LOADING PLAN & 2D SVGS)
-     * =========================================================================
-     */
+    function readInputsAndUpdate(triggerModal = false) {
+      const factor = UNIT_CONFIG[state.unit].toMeters;
+      const rawL = parseFloat(document.getElementById('input-length').value);
+      const rawW = parseFloat(document.getElementById('input-width').value);
+      const rawH = parseFloat(document.getElementById('input-height').value);
+      const qtyRaw = document.getElementById('input-qty').value.trim();
+
+      const rawPL = parseFloat(document.getElementById('pallet-l').value);
+      const rawPW = parseFloat(document.getElementById('pallet-w').value);
+      const rawPMaxH = parseFloat(document.getElementById('pallet-max-h').value);
+
+      const numById = (id) => { const e = document.getElementById(id); const v = e ? parseFloat(e.value) : NaN; return v > 0 ? v : null; };
+      state.boxWeight = numById('w-box') || 0;
+      state.maxLoad = numById('w-load');
+      state.maxLayerW = numById('w-layer');
+
+      if (isNaN(rawL) || rawL <= 0 || isNaN(rawW) || rawW <= 0 || isNaN(rawH) || rawH <= 0) return;
+
+      state.product = { l: rawL * factor, w: rawW * factor, h: rawH * factor };
+      state.targetQty = qtyRaw !== '' ? parseInt(qtyRaw, 10) : null;
+      state.pallet = { l: rawPL * factor, w: rawPW * factor, maxH: rawPMaxH * factor };
+
+      calculateAllOrientations();
+      updateAllViews();
+    }
+
+    function stabilityOf(o) {
+      const { l: pL, w: pW } = state.pallet;
+      let W = 0, sx = 0, sz = 0, sy = 0, left = o.actualItems;
+      for (let i = 0; i < o.actualLayers && left > 0; i++) {
+        const sp = o.layerPack, n = Math.min(sp.count, left), wt = state.boxWeight || 1; left -= n;
+        for (let q = 0; q < n; q++) {
+          const p = sp.boxes[q];
+          W += wt;
+          sx += wt * (p.x + p.w / 2 - pL / 2);
+          sz += wt * (p.y + p.d / 2 - pW / 2);
+          sy += wt * (i * o.upDim + o.upDim / 2);
+        }
+      }
+      if (!W) return null;
+      const cx = sx / W, cz = sz / W, h = sy / W;
+      const d = Math.max(0, Math.min(pL / 2 - Math.abs(cx), pW / 2 - Math.abs(cz)));
+      const tilt = Math.atan2(d, h) * 180 / Math.PI;
+      const off = Math.max(Math.abs(cx) / (pL / 2), Math.abs(cz) / (pW / 2)) * 100;
+      const ratio = o.totalHeight / Math.min(pL, pW);
+      const c = (v) => Math.max(0, Math.min(1, v));
+      const score = Math.round(100 * (0.7 * c((tilt - 8) / 22) + 0.3 * (1 - c(off / 25))));
+      const issues = [];
+      if (ratio > 3) issues.push(`Stack is ${ratio.toFixed(1)}× taller than pallet width.`);
+      if (off > 10) issues.push(`Center of gravity is ${off.toFixed(0)}% off-center.`);
+      if (tilt < 15) issues.push(`Tips at ${tilt.toFixed(0)}° of tilt.`);
+      return { score, tilt, off, h, ratio, issues, label: score < 45 ? 'Unstable' : score >= 70 && !issues.length ? 'Stable' : 'Caution' };
+    }
+
+    function applyAutoLimit() {
+      if (!state.autoLimit) return;
+      state.orientations.forEach((o) => {
+        if (!o.isValid) return;
+        let k = o.actualLayers;
+        while (k > 1) {
+          const testO = { ...o, actualLayers: k, actualItems: k * o.itemsPerLayer, totalHeight: k * o.upDim };
+          if (stabilityOf(testO).score >= 45) break;
+          k--;
+        }
+        if (k < o.actualLayers) {
+          o.actualLayers = k;
+          o.actualItems = k * o.itemsPerLayer;
+          o.totalHeight = k * o.upDim;
+          o.clearance = Math.max(0, state.pallet.maxH - o.totalHeight);
+        }
+      });
+    }
 
     function renderOrientationCards() {
       const container = document.getElementById('orientation-cards-container');
       container.innerHTML = '';
-      let bestIdx = -1;
-      state.orientations.forEach((o, i) => {
-        if (!o.isValid) return;
-        const b = state.orientations[bestIdx];
-        if (!b || o.actualItems > b.actualItems || (o.actualItems === b.actualItems && o.totalHeight < b.totalHeight - 1e-9)) bestIdx = i;
-      });
 
       state.orientations.forEach((opt, idx) => {
         const isSelected = idx === state.selectedIndex;
@@ -998,32 +805,18 @@
         card.onclick = () => {
           state.selectedIndex = idx;
           updateAllViews();
-          checkAndTriggerLimitModal(true);
         };
 
-        const badgeColor = !opt.isValid
-          ? 'bg-red-100 text-red-700'
-          : idx === bestIdx
-            ? 'bg-emerald-100 text-emerald-700'
-            : 'bg-gray-100 text-gray-700';
-
-        const badgeText = !opt.isValid
-          ? 'Exceeds Limit'
-          : idx === bestIdx
-            ? 'Most Items'
-            : opt.clearance < 1e-4
-              ? 'Exact Max Height'
-              : `${formatDim(opt.clearance)} Spare H`;
+        const badgeText = !opt.isValid ? 'Exceeds Limit' : `${formatDim(opt.clearance)} Free H`;
 
         card.innerHTML = `
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <span class="text-xs font-bold uppercase tracking-wider ${isSelected ? 'text-[#0071E3]' : 'text-[#6E6E73]'}">${opt.code}</span>
-              <span class="text-sm font-semibold text-[#1D1D1F]">${opt.mixed ? 'Mixed layers' : formatDim(opt.upDim) + ' Side Up'}</span>
+              <span class="text-sm font-semibold text-[#1D1D1F]">${formatDim(opt.upDim)} Side Up</span>
             </div>
-            <span class="text-[11px] font-medium px-2 py-0.5 rounded-full ${badgeColor}">${badgeText}</span>
+            <span class="text-[11px] font-medium px-2 py-0.5 rounded-full ${opt.isValid ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}">${badgeText}</span>
           </div>
-
           <div class="mt-2.5 grid grid-cols-3 gap-2 text-xs">
             <div class="bg-[#F5F5F7]/80 rounded-lg px-2.5 py-1.5">
               <span class="text-[10px] text-[#6E6E73] block">Footprint</span>
@@ -1045,11 +838,10 @@
     }
 
     function renderKPIsAndSummary() {
-      const opt = state.orientations[state.selectedIndex];
+      const opt = state.orientations[state.selectedIndex] || state.orientations[0];
       const { l: pL, w: pW, maxH: pMaxH } = state.pallet;
       const palletDimStr = `${formatDim(pL)} × ${formatDim(pW)} × ${formatDim(pMaxH)}`;
 
-      // Update Header Badge, Unit Reference & Inline summary
       document.getElementById('header-pallet-badge').innerHTML = `
         <span class="w-2 h-2 rounded-full ${opt.isValid ? 'bg-emerald-500' : 'bg-red-500'}"></span>
         Pallet: ${palletDimStr}
@@ -1059,130 +851,88 @@
       document.getElementById('legend-max-h-text').textContent = `Max Height (${formatDim(pMaxH)})`;
 
       if (!opt.isValid) {
-        showNotification(`Product dimensions (${formatDim(state.product.l)} × ${formatDim(state.product.w)} × ${formatDim(state.product.h)}) exceed the pallet base or ${formatDim(pMaxH)} height limit in this orientation.`, 'error');
-      } else if (state.targetQty && state.targetQty > opt.maxCapacity) {
-        showNotification(`Target quantity (${state.targetQty}) exceeds single-pallet capacity (${opt.maxCapacity} items). Showing full pallet of ${opt.maxCapacity} items.`, 'warning');
+        showNotification(`Product dimensions exceed pallet envelope in this orientation.`, 'error');
       } else {
         hideNotification();
       }
 
-      // KPI Cards
       document.getElementById('kpi-total-items').textContent = opt.actualItems;
       document.getElementById('kpi-items-sub').textContent = `items (${opt.itemsPerLayer}/layer)`;
 
       document.getElementById('kpi-stack-height').textContent = formatDim(opt.totalHeight);
-      const heightLimitEl = document.getElementById('kpi-height-limit');
-      heightLimitEl.textContent = `/ ${formatDim(pMaxH)} max`;
-      heightLimitEl.className = opt.isValid ? 'text-xs font-medium text-emerald-600' : 'text-xs font-medium text-red-600';
+      document.getElementById('kpi-height-limit').textContent = `/ ${formatDim(pMaxH)} max`;
 
       document.getElementById('kpi-base-util').textContent = `${opt.baseUtilPct.toFixed(1)}%`;
-      document.getElementById('kpi-layers-count').textContent = `${opt.actualLayers} ${opt.actualLayers === 1 ? 'layer' : 'layers'}`;
+      document.getElementById('kpi-layers-count').textContent = `${opt.actualLayers} layers`;
 
-      document.getElementById('kpi-vol-util').textContent = `${opt.volUtilPct.toFixed(1)}%`;
-      document.getElementById('kpi-vol-util').nextElementSibling.textContent = `of ${formatVolume(pL * pW * pMaxH)}`;
+      const totalWt = opt.actualItems * state.boxWeight;
+      document.getElementById('kpi-total-weight').textContent = `${totalWt} kg`;
 
-      // Active Badges
       document.getElementById('active-orientation-badge').textContent = `${opt.code}: ${formatDim(opt.upDim)} Up`;
-      const formattedPatternName = opt.layerPack.patternName.replace(/\{\{([^}]+)\}\}/g, (_, v) => formatDim(parseFloat(v)));
-      document.getElementById('svg-pattern-badge').textContent = formattedPatternName;
+      document.getElementById('svg-pattern-badge').textContent = `Grid: ${opt.layerPack.cols} × ${opt.layerPack.rows} (${opt.itemsPerLayer} boxes/layer)`;
 
-      // Interlock hint
+      const marginL = (pL - opt.layerPack.usedL) / 2;
+      const marginW = (pW - opt.layerPack.usedW) / 2;
+
+      document.getElementById('loading-plan-details').innerHTML = `
+        <p><strong>Load Centering:</strong> The footprint (${formatDim(opt.layerPack.usedL)} × ${formatDim(opt.layerPack.usedW)}) is <strong>perfectly centered</strong> with <strong>${formatDim(marginL)}</strong> length margin and <strong>${formatDim(marginW)}</strong> width margin on each side.</p>
+        <p><strong>Payload Weight:</strong> Total load weight is <strong>${totalWt} kg</strong> (${opt.actualItems} boxes × ${state.boxWeight} kg).</p>
+        <p><strong>Stack Height & Stability:</strong> Stacking ${opt.actualLayers} layers high yields a total height of <strong>${formatDim(opt.totalHeight)}</strong>, leaving ${formatDim(opt.clearance)} clearance below the ${formatDim(pMaxH)} limit.</p>
+      `;
+
+      // Interlock toggle state
       const interlockToggle = document.getElementById('toggle-interlock');
-      const interlockHint = document.getElementById('interlock-hint');
       if (!opt.canInterlockLayer) {
         interlockToggle.disabled = true;
         interlockToggle.checked = false;
         state.interlock = false;
-        interlockHint.textContent = 'Disabled (rotated layer exceeds pallet edge)';
       } else {
         interlockToggle.disabled = false;
-        interlockHint.textContent = state.interlock
-          ? 'Active: Even layers rotated 90°'
-          : 'Rotates even layers 90° for stability';
       }
 
-      // Loading Plan Summary Text
-      const spareL = formatDim(Math.max(0, pL - opt.layerPack.usedL));
-      const spareW = formatDim(Math.max(0, pW - opt.layerPack.usedW));
-      const planEl = document.getElementById('loading-plan-details');
+      // Stability Summary
+      const ss = document.getElementById('stability-summary');
+      if (ss && opt && opt.isValid) {
+        const s = stabilityOf(opt);
+        if (s) {
+          const col = s.label === 'Stable' ? '#059669' : s.label === 'Caution' ? '#D97706' : '#DC2626';
+          ss.innerHTML = `<b style="color:${col}">${s.label}</b> · ${s.score}/100. Tilt margin ${s.tilt.toFixed(0)}°, center of gravity ${formatDim(s.h)} high, ${s.off.toFixed(0)}% off-center.` + (s.issues.length ? `<br>${s.issues.join(' ')}` : '');
+        }
+      }
 
-      if (!opt.isValid) {
-        planEl.innerHTML = `<p class="text-red-600 font-medium">Cannot fit a single layer within the ${palletDimStr} pallet envelope.</p>`;
-      } else {
-        planEl.innerHTML = `
-          <div class="flex items-start gap-2">
-            <span class="w-5 h-5 rounded-full bg-blue-50 text-[#0071E3] font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5">1</span>
-            <p><strong>Orientation:</strong> Place each box with the <strong>${formatDim(opt.upDim)}</strong> side vertical and the <strong>${formatDim(opt.baseA)} × ${formatDim(opt.baseB)}</strong> face flat on the pallet.</p>
-          </div>
-          <div class="flex items-start gap-2">
-            <span class="w-5 h-5 rounded-full bg-blue-50 text-[#0071E3] font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5">2</span>
-            <p><strong>Layer Arrangement:</strong> Arrange <strong>${opt.itemsPerLayer} boxes per layer</strong> covering <strong>${formatDim(opt.layerPack.usedL)} × ${formatDim(opt.layerPack.usedW)}</strong> (leaving ${spareL} & ${spareW} perimeter margin).</p>
-          </div>
-          <div class="flex items-start gap-2">
-            <span class="w-5 h-5 rounded-full bg-blue-50 text-[#0071E3] font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5">3</span>
-            <p><strong>Vertical Stack:</strong> Stack <strong>${opt.actualLayers} layers high</strong> for a total height of <strong>${formatDim(opt.totalHeight)}</strong> (${formatDim(opt.clearance)} below the ${formatDim(pMaxH)} limit).</p>
-          </div>
-        `;
+      // Weight Summary
+      const ws = document.getElementById('weight-summary');
+      if (ws && opt && opt.isValid) {
+        if (!state.boxWeight) ws.textContent = '';
+        else {
+          const tw = opt.actualItems * state.boxWeight;
+          ws.innerHTML = `Total Payload: <b>${tw.toFixed(1)} kg</b>` + (state.maxLoad ? ` of ${state.maxLoad} kg max` : '');
+        }
       }
     }
 
-    /**
-     * Renders crisp 2D Engineering Diagrams (Top-Down & Side Elevation SVGs)
-     */
     function render2DSVGs() {
-      const opt = state.orientations[state.selectedIndex];
+      const opt = state.orientations[state.selectedIndex] || state.orientations[0];
       const { l: pL, w: pW, maxH: pMaxH } = state.pallet;
 
-      // ---------------------------------------------------------
-      // 1. TOP-DOWN LAYER PLAN SVG
-      // ---------------------------------------------------------
+      // TOP VIEW SVG
       const svgTop = document.getElementById('svg-top-view');
-      const pad = 42;
       const drawArea = 240;
-      const maxPalletDim = Math.max(pL, pW);
-      const scaleTop = drawArea / maxPalletDim;
-
+      const scaleTop = drawArea / Math.max(pL, pW);
       const palletPxW = pL * scaleTop;
       const palletPxH = pW * scaleTop;
-      const startX = pad + (drawArea - palletPxW) / 2;
-      const startY = pad + (drawArea - palletPxH) / 2;
+      const startX = 42 + (drawArea - palletPxW) / 2;
+      const startY = 42 + (drawArea - palletPxH) / 2;
 
-      const spareL = Math.max(0, pL - opt.layerPack.usedL);
-      const spareW = Math.max(0, pW - opt.layerPack.usedW);
-      document.getElementById('topdown-footprint-label').textContent =
-        `${formatDim(opt.layerPack.usedL)} × ${formatDim(opt.layerPack.usedW)} used`;
+      const marginL = (pL - opt.layerPack.usedL) / 2;
+      const marginW = (pW - opt.layerPack.usedW) / 2;
+
+      document.getElementById('topdown-footprint-label').textContent = `${formatDim(opt.layerPack.usedL)} × ${formatDim(opt.layerPack.usedW)} used`;
 
       let topMarkup = `
-        <defs>
-          <pattern id="palletSlats" width="12" height="12" patternUnits="userSpaceOnUse">
-            <rect width="12" height="12" fill="#F3E8D2" />
-            <line x1="0" y1="0" x2="12" y2="0" stroke="#E2D1B3" stroke-width="2" />
-          </pattern>
-        </defs>
-
-        <!-- Pallet Base Outline -->
-        <rect x="${startX}" y="${startY}" width="${palletPxW}" height="${palletPxH}" rx="4"
-              fill="url(#palletSlats)" stroke="#B49A67" stroke-width="2" />
-
-        <!-- Top Dimension Line (Pallet Length) -->
-        <line x1="${startX}" y1="${startY - 14}" x2="${startX + palletPxW}" y2="${startY - 14}" stroke="#6E6E73" stroke-width="1.2" />
-        <line x1="${startX}" y1="${startY - 19}" x2="${startX}" y2="${startY - 9}" stroke="#6E6E73" stroke-width="1.2" />
-        <line x1="${startX + palletPxW}" y1="${startY - 19}" x2="${startX + palletPxW}" y2="${startY - 9}" stroke="#6E6E73" stroke-width="1.2" />
-        <text x="${startX + palletPxW / 2}" y="${startY - 20}" text-anchor="middle" font-size="11" font-weight="600" fill="#1D1D1F">
-          Pallet: ${formatDim(pL)}
-        </text>
-
-        <!-- Left Dimension Line (Pallet Width) -->
-        <line x1="${startX - 14}" y1="${startY}" x2="${startX - 14}" y2="${startY + palletPxH}" stroke="#6E6E73" stroke-width="1.2" />
-        <line x1="${startX - 19}" y1="${startY}" x2="${startX - 9}" y2="${startY}" stroke="#6E6E73" stroke-width="1.2" />
-        <line x1="${startX - 19}" y1="${startY + palletPxH}" x2="${startX - 9}" y2="${startY + palletPxH}" stroke="#6E6E73" stroke-width="1.2" />
-        <text x="${startX - 22}" y="${startY + palletPxH / 2}" text-anchor="middle" font-size="11" font-weight="600" fill="#1D1D1F"
-              transform="rotate(-90, ${startX - 22}, ${startY + palletPxH / 2})">
-          Pallet: ${formatDim(pW)}
-        </text>
+        <rect x="${startX}" y="${startY}" width="${palletPxW}" height="${palletPxH}" rx="4" fill="#F3E8D2" stroke="#B49A67" stroke-width="2" />
       `;
 
-      // Render Boxes on Top-Down View
       if (opt.isValid) {
         opt.layerPack.boxes.forEach((box, i) => {
           const bx = startX + box.x * scaleTop;
@@ -1190,511 +940,191 @@
           const bw = box.w * scaleTop;
           const bd = box.d * scaleTop;
 
-          const fillCol = box.rotated ? '#60A5FA' : '#3B82F6';
           topMarkup += `
-            <rect x="${bx + 1}" y="${by + 1}" width="${Math.max(0, bw - 2)}" height="${Math.max(0, bd - 2)}" rx="4"
-                  fill="${fillCol}" fill-opacity="0.88" stroke="#1D4ED8" stroke-width="1.5" />
+            <rect x="${bx + 1}" y="${by + 1}" width="${bw - 2}" height="${bd - 2}" rx="4" fill="#3B82F6" fill-opacity="0.88" stroke="#1D4ED8" stroke-width="1.5" />
+            <text x="${bx + bw / 2}" y="${by + bd / 2 + 3}" text-anchor="middle" font-size="10" font-weight="700" fill="#FFFFFF">Box ${i + 1}</text>
           `;
-
-          if (bw > 34 && bd > 28) {
-            topMarkup += `
-              <text x="${bx + bw / 2}" y="${by + bd / 2 - 3}" text-anchor="middle" font-size="10" font-weight="700" fill="#FFFFFF">
-                Box ${i + 1}
-              </text>
-              <text x="${bx + bw / 2}" y="${by + bd / 2 + 10}" text-anchor="middle" font-size="9" font-weight="500" fill="#EFF6FF">
-                ${formatDim(box.w, false)}×${formatDim(box.d)}
-              </text>
-            `;
-          }
         });
 
-        // Annotate Spare Margins at Bottom/Right
-        const marginNotes = [];
-        if (spareL > 1e-4) marginNotes.push(`Right spare: ${formatDim(spareL)}`);
-        if (spareW > 1e-4) marginNotes.push(`Bottom spare: ${formatDim(spareW)}`);
-        const footerText = marginNotes.length > 0 ? marginNotes.join('  •  ') : '100% Edge-to-Edge Base Fit';
-
         topMarkup += `
-          <text x="${startX + palletPxW / 2}" y="${startY + palletPxH + 20}" text-anchor="middle" font-size="10.5" font-weight="500" fill="#6E6E73">
-            ${footerText}
-          </text>
-        `;
-      } else {
-        topMarkup += `
-          <text x="${startX + palletPxW / 2}" y="${startY + palletPxH / 2}" text-anchor="middle" font-size="12" font-weight="600" fill="#DC2626">
-            Box exceeds pallet base
+          <text x="${startX + palletPxW / 2}" y="${startY + palletPxH + 18}" text-anchor="middle" font-size="10" font-weight="500" fill="#6E6E73">
+            Centered Margin: ${formatDim(marginL)} L  •  ${formatDim(marginW)} W
           </text>
         `;
       }
-
       svgTop.innerHTML = topMarkup;
 
-      // ---------------------------------------------------------
-      // 2. SIDE ELEVATION STACK SVG
-      // ---------------------------------------------------------
+      // SIDE VIEW SVG
       const svgSide = document.getElementById('svg-side-view');
-      const sidePadTop = 34;
-      const sidePadBottom = 46;
-      const availH = 340 - sidePadTop - sidePadBottom;
-      const maxElevationH = Math.max(pMaxH, opt.totalHeight) * 1.05;
-      const scaleSideY = availH / maxElevationH;
+      const baseLineY = 290;
+      const scaleSideY = 210 / Math.max(pMaxH, opt.totalHeight);
+      const sidePalletW = 180;
+      const sideStartX = 80;
 
-      const baseLineY = 340 - sidePadBottom;
-      const maxHLineY = baseLineY - pMaxH * scaleSideY;
-
-      const sidePalletW = 170;
-      const sideStartX = 68;
-      const usedRatio = pL > 0 ? Math.min(1, opt.layerPack.usedL / pL) : 1;
-      const stackPxW = sidePalletW * usedRatio;
-
-      document.getElementById('sideview-clearance-label').textContent = opt.isValid
-        ? `${formatDim(opt.clearance)} clearance`
-        : 'Out of bounds';
+      document.getElementById('sideview-clearance-label').textContent = `${formatDim(opt.clearance)} clearance`;
 
       let sideMarkup = `
-        <!-- Max Height Limit Dashed Line -->
-        <line x1="${sideStartX - 16}" y1="${maxHLineY}" x2="${sideStartX + sidePalletW + 52}" y2="${maxHLineY}"
-              stroke="#F59E0B" stroke-width="1.5" stroke-dasharray="5,4" />
-        <text x="${sideStartX + sidePalletW + 50}" y="${maxHLineY - 5}" text-anchor="end" font-size="10" font-weight="600" fill="#D97706">
-          Max Limit: ${formatDim(pMaxH)}
-        </text>
-
-        <!-- Wooden Pallet Base -->
-        <rect x="${sideStartX}" y="${baseLineY}" width="${sidePalletW}" height="14" rx="2" fill="#D4B483" stroke="#9C7A4C" stroke-width="1.5" />
-        <rect x="${sideStartX + 8}" y="${baseLineY + 14}" width="18" height="8" fill="#B49A67" />
-        <rect x="${sideStartX + sidePalletW / 2 - 9}" y="${baseLineY + 14}" width="18" height="8" fill="#B49A67" />
-        <rect x="${sideStartX + sidePalletW - 26}" y="${baseLineY + 14}" width="18" height="8" fill="#B49A67" />
-        <text x="${sideStartX + sidePalletW / 2}" y="${baseLineY + 34}" text-anchor="middle" font-size="10.5" font-weight="600" fill="#6E6E73">
-          Pallet Base (${formatDim(pL)})
-        </text>
+        <line x1="20" y1="${baseLineY - pMaxH * scaleSideY}" x2="320" y2="${baseLineY - pMaxH * scaleSideY}" stroke="#F59E0B" stroke-width="1.5" stroke-dasharray="4,4" />
+        <text x="315" y="${baseLineY - pMaxH * scaleSideY - 4}" text-anchor="end" font-size="9.5" font-weight="600" fill="#D97706">Max Limit (${formatDim(pMaxH)})</text>
+        <!-- Pallet Base -->
+        <rect x="${sideStartX}" y="${baseLineY}" width="${sidePalletW}" height="12" rx="2" fill="#D4B483" stroke="#9C7A4C" stroke-width="1.5" />
+        <rect x="${sideStartX + 10}" y="${baseLineY + 12}" width="20" height="8" fill="#B49A67" />
+        <rect x="${sideStartX + sidePalletW / 2 - 10}" y="${baseLineY + 12}" width="20" height="8" fill="#B49A67" />
+        <rect x="${sideStartX + sidePalletW - 30}" y="${baseLineY + 12}" width="20" height="8" fill="#B49A67" />
       `;
 
-      if (opt.isValid && opt.actualLayers > 0) {
-        const layerPxH = opt.upDim * scaleSideY;
-        const colsToShow = Math.max(1, opt.layerPack.cols);
-        const colPxW = stackPxW / colsToShow;
-
+      if (opt.isValid) {
         for (let lyr = 0; lyr < opt.actualLayers; lyr++) {
-          const sp = layerSpec(opt, lyr);
-          const lh = sp.up * scaleSideY;
-          const ly = baseLineY - (sp.y0 + sp.up) * scaleSideY;
-          const fillCol = lyr % 2 === 0 ? '#3B82F6' : '#60A5FA';
-
-          // Draw individual columns in this layer
-          for (let c = 0; c < colsToShow; c++) {
-            sideMarkup += `
-              <rect x="${sideStartX + c * colPxW + 0.5}" y="${ly + 0.5}" width="${Math.max(0, colPxW - 1)}" height="${Math.max(0, lh - 1)}" rx="2"
-                    fill="${fillCol}" fill-opacity="0.9" stroke="#1D4ED8" stroke-width="1.2" />
-            `;
-          }
-
-          if (lh >= 16) {
-            sideMarkup += `
-              <text x="${sideStartX + stackPxW / 2}" y="${ly + lh / 2 + 3.5}" text-anchor="middle" font-size="9.5" font-weight="600" fill="#FFFFFF">
-                Layer ${lyr + 1} (${formatDim(sp.up)})
-              </text>
-            `;
-          }
-        }
-
-        // Total Stack Height Dimension Bracket on the Left
-        const stackTopY = baseLineY - opt.totalHeight * scaleSideY;
-        sideMarkup += `
-          <line x1="${sideStartX - 14}" y1="${stackTopY}" x2="${sideStartX - 14}" y2="${baseLineY}" stroke="#0071E3" stroke-width="1.5" />
-          <line x1="${sideStartX - 19}" y1="${stackTopY}" x2="${sideStartX - 9}" y2="${stackTopY}" stroke="#0071E3" stroke-width="1.5" />
-          <line x1="${sideStartX - 19}" y1="${baseLineY}" x2="${sideStartX - 9}" y2="${baseLineY}" stroke="#0071E3" stroke-width="1.5" />
-          <text x="${sideStartX - 22}" y="${(stackTopY + baseLineY) / 2}" text-anchor="middle" font-size="11" font-weight="700" fill="#0071E3"
-                transform="rotate(-90, ${sideStartX - 22}, ${(stackTopY + baseLineY) / 2})">
-            Total: ${formatDim(opt.totalHeight)}
-          </text>
-        `;
-
-        // Clearance Arrow if space remains below maxH
-        if (opt.clearance > 1e-4 && (stackTopY - maxHLineY) > 16) {
-          const midClearY = (stackTopY + maxHLineY) / 2;
+          const lh = opt.upDim * scaleSideY;
+          const ly = baseLineY - (lyr + 1) * lh;
           sideMarkup += `
-            <line x1="${sideStartX + stackPxW + 14}" y1="${maxHLineY}" x2="${sideStartX + stackPxW + 14}" y2="${stackTopY}" stroke="#10B981" stroke-width="1.3" />
-            <text x="${sideStartX + stackPxW + 20}" y="${midClearY + 3.5}" text-anchor="start" font-size="9.5" font-weight="600" fill="#059669">
-              +${formatDim(opt.clearance)} free
-            </text>
+            <rect x="${sideStartX + 10}" y="${ly}" width="${sidePalletW - 20}" height="${lh - 1}" rx="3" fill="${lyr % 2 === 0 ? '#3B82F6' : '#60A5FA'}" stroke="#1D4ED8" stroke-width="1.2" />
+            <text x="${sideStartX + sidePalletW / 2}" y="${ly + lh / 2 + 3}" text-anchor="middle" font-size="9.5" font-weight="600" fill="#FFFFFF">Layer ${lyr + 1} (${formatDim(opt.upDim)})</text>
           `;
         }
       }
-
       svgSide.innerHTML = sideMarkup;
     }
 
     /**
-     * =========================================================================
-     * THREE.JS INTERACTIVE 3D PALLET SCENE & HOVER INSPECTION TOOLTIP
-     * =========================================================================
+     * THREE.JS 3D SCENE (RESTORED MULTI-SLAT PALLET & FLOOR GRID)
      */
     let scene, camera, renderer, palletGroup, boxesGroup, boundaryGroup;
-    let isDragging = false;
-    let prevPointer = { x: 0, y: 0 };
-    let spherical = { radius: 3.1, theta: Math.PI / 4, phi: Math.PI / 3.1 };
-    let cameraTarget = new THREE.Vector3(0, 0.85, 0);
-    let raycaster, mouseNDC, hoveredBoxMesh = null;
 
     function initThreeJS() {
-      if (typeof THREE === 'undefined') {
-        console.warn('Three.js not loaded yet; 3D canvas will retry.');
-        return false;
-      }
-      try {
-        const wrapper = document.getElementById('canvas3d-wrapper');
-        const canvas = document.getElementById('three-canvas');
-        const tooltipEl = document.getElementById('three-hover-tooltip');
-
-        scene = new THREE.Scene();
-        raycaster = new THREE.Raycaster();
-        mouseNDC = new THREE.Vector2();
-
-        const width = Math.max(wrapper.clientWidth, 300);
-        const height = Math.max(wrapper.clientHeight, 300);
-        camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 50);
-        updateCameraPosition();
-
-        renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
-        renderer.setSize(width, height);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-        // Studio Three-Point Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.68);
-        scene.add(ambientLight);
-
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.72);
-        dirLight.position.set(3.5, 5.5, 4.0);
-        dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 1024;
-        dirLight.shadow.mapSize.height = 1024;
-        scene.add(dirLight);
-
-        const fillLight = new THREE.DirectionalLight(0xe0ecff, 0.35);
-        fillLight.position.set(-3.0, 2.5, -3.5);
-        scene.add(fillLight);
-
-        // Subtle Floor Grid Helper
-        const gridHelper = new THREE.GridHelper(3.2, 16, 0xd1d5db, 0xe5e7eb);
-        gridHelper.position.y = -0.14;
-        scene.add(gridHelper);
-
-        // Initialize Scene Groups
-        palletGroup = new THREE.Group();
-        boxesGroup = new THREE.Group();
-        boundaryGroup = new THREE.Group();
-        scene.add(palletGroup);
-        scene.add(boxesGroup);
-        scene.add(boundaryGroup);
-
-        // Orbit Controls & Hover Raycasting (Mouse & Touch)
-        canvas.addEventListener('pointerdown', (e) => {
-          isDragging = true;
-          prevPointer = { x: e.clientX, y: e.clientY };
-          tooltipEl.classList.add('hidden');
-        });
-
-        canvas.addEventListener('pointermove', (e) => {
-          if (isDragging) {
-            tooltipEl.classList.add('hidden');
-            return;
-          }
-          const rect = canvas.getBoundingClientRect();
-          mouseNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-          mouseNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-
-          raycaster.setFromCamera(mouseNDC, camera);
-          const boxMeshes = [];
-          boxesGroup.traverse((child) => {
-            if (child.isMesh && child.userData && child.userData.boxMeta) {
-              boxMeshes.push(child);
-            }
-          });
-
-          const intersects = raycaster.intersectObjects(boxMeshes, false);
-          if (intersects.length > 0) {
-            const hit = intersects[0].object;
-            if (hoveredBoxMesh && hoveredBoxMesh !== hit) {
-              hoveredBoxMesh.material.emissive.setHex(0x000000);
-            }
-            hoveredBoxMesh = hit;
-            hoveredBoxMesh.material.emissive.setHex(0x1e40af);
-
-            const meta = hit.userData.boxMeta;
-            document.getElementById('tooltip-title').textContent = `Layer ${meta.layer} • Box #${meta.index}`;
-            document.getElementById('tooltip-dims').textContent = `Size: ${formatDim(meta.w)} × ${formatDim(meta.d)} × ${formatDim(meta.h)}`;
-            document.getElementById('tooltip-pos').textContent = `Origin: (${formatDim(meta.x)}, ${formatDim(meta.y)}, ${formatDim(meta.z)})`;
-
-            const tipX = Math.min(rect.width - 175, Math.max(10, e.clientX - rect.left + 14));
-            const tipY = Math.min(rect.height - 68, Math.max(10, e.clientY - rect.top - 10));
-            tooltipEl.style.left = `${tipX}px`;
-            tooltipEl.style.top = `${tipY}px`;
-            tooltipEl.classList.remove('hidden');
-            canvas.style.cursor = 'pointer';
-          } else {
-            if (hoveredBoxMesh) {
-              hoveredBoxMesh.material.emissive.setHex(0x000000);
-              hoveredBoxMesh = null;
-            }
-            tooltipEl.classList.add('hidden');
-            canvas.style.cursor = 'grab';
-          }
-        });
-
-        canvas.addEventListener('pointerleave', () => {
-          if (hoveredBoxMesh) {
-            hoveredBoxMesh.material.emissive.setHex(0x000000);
-            hoveredBoxMesh = null;
-          }
-          tooltipEl.classList.add('hidden');
-        });
-
-        window.addEventListener('pointermove', (e) => {
-          if (!isDragging) return;
-          const dx = e.clientX - prevPointer.x;
-          const dy = e.clientY - prevPointer.y;
-          prevPointer = { x: e.clientX, y: e.clientY };
-
-          spherical.theta -= dx * 0.008;
-          spherical.phi = Math.max(0.12, Math.min(Math.PI / 2 - 0.03, spherical.phi - dy * 0.008));
-          updateCameraPosition();
-        });
-
-        window.addEventListener('pointerup', () => {
-          isDragging = false;
-        });
-
-        window.addEventListener('pointercancel', () => {
-          isDragging = false;
-        });
-
-        canvas.addEventListener('wheel', (e) => {
-          e.preventDefault();
-          spherical.radius = Math.max(1.5, Math.min(6.5, spherical.radius + e.deltaY * 0.002));
-          updateCameraPosition();
-        }, { passive: false });
-
-        window.addEventListener('resize', handleCanvasResize);
-
-        if (typeof ResizeObserver !== 'undefined') {
-          const ro = new ResizeObserver(() => handleCanvasResize());
-          ro.observe(wrapper);
-        }
-        return true;
-      } catch (err) {
-        console.warn('3D WebGL initialization failed, falling back to 2D view:', err);
-        return false;
-      }
-    }
-
-    function handleCanvasResize() {
       const wrapper = document.getElementById('canvas3d-wrapper');
-      if (!wrapper || !renderer || !camera) return;
-      const w = wrapper.clientWidth;
-      const h = wrapper.clientHeight;
-      if (w > 0 && h > 0) {
-        camera.aspect = w / h;
-        camera.updateProjectionMatrix();
-        renderer.setSize(w, h);
-      }
-    }
+      const canvas = document.getElementById('three-canvas');
 
-    function updateCameraPosition() {
-      if (!camera || typeof THREE === 'undefined') return;
-      const x = cameraTarget.x + spherical.radius * Math.sin(spherical.phi) * Math.sin(spherical.theta);
-      const y = cameraTarget.y + spherical.radius * Math.cos(spherical.phi);
-      const z = cameraTarget.z + spherical.radius * Math.sin(spherical.phi) * Math.cos(spherical.theta);
-      camera.position.set(x, y, z);
-      camera.lookAt(cameraTarget);
-    }
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(40, wrapper.clientWidth / wrapper.clientHeight, 0.1, 50);
+      camera.position.set(2.4, 2.0, 2.7);
+      camera.lookAt(0, 0.7, 0);
 
-    function setCameraPreset(preset) {
-      if (preset === 'iso') {
-        spherical = { radius: 3.1, theta: Math.PI / 4, phi: Math.PI / 3.1 };
-      } else if (preset === 'top') {
-        spherical = { radius: 3.2, theta: 0.001, phi: 0.13 };
-      } else if (preset === 'side') {
-        spherical = { radius: 3.0, theta: 0, phi: Math.PI / 2.15 };
-      }
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+      renderer.setSize(wrapper.clientWidth, wrapper.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-      document.querySelectorAll('.cam-preset-btn').forEach((btn) => {
-        const isMatch = btn.dataset.preset === preset;
-        btn.classList.toggle('bg-white', isMatch);
-        btn.classList.toggle('text-[#0071E3]', isMatch);
-        btn.classList.toggle('shadow-sm', isMatch);
-        btn.classList.toggle('text-[#6E6E73]', !isMatch);
+      scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      dirLight.position.set(4, 6, 4);
+      scene.add(dirLight);
+
+      // Floor Grid Lines
+      const gridHelper = new THREE.GridHelper(3.2, 16, 0xd1d5db, 0xe5e7eb);
+      gridHelper.position.y = -0.14;
+      scene.add(gridHelper);
+
+      palletGroup = new THREE.Group();
+      boxesGroup = new THREE.Group();
+      boundaryGroup = new THREE.Group();
+
+      scene.add(palletGroup);
+      scene.add(boxesGroup);
+      scene.add(boundaryGroup);
+
+      // Orbit controls
+      let isDragging = false;
+      let prevMouse = { x: 0, y: 0 };
+      canvas.addEventListener('pointerdown', (e) => { isDragging = true; prevMouse = { x: e.clientX, y: e.clientY }; });
+      window.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        const dx = (e.clientX - prevMouse.x) * 0.008;
+        const dy = (e.clientY - prevMouse.y) * 0.008;
+        prevMouse = { x: e.clientX, y: e.clientY };
+
+        const r = camera.position.distanceTo(new THREE.Vector3(0, 0.7, 0));
+        let theta = Math.atan2(camera.position.x, camera.position.z) - dx;
+        let phi = Math.acos(Math.max(-0.99, Math.min(0.99, (camera.position.y - 0.7) / r))) - dy;
+        phi = Math.max(0.1, Math.min(Math.PI / 2 - 0.05, phi));
+
+        camera.position.x = r * Math.sin(phi) * Math.sin(theta);
+        camera.position.y = 0.7 + r * Math.cos(phi);
+        camera.position.z = r * Math.sin(phi) * Math.cos(theta);
+        camera.lookAt(0, 0.7, 0);
       });
+      window.addEventListener('pointerup', () => { isDragging = false; });
 
-      updateCameraPosition();
-    }
-
-    function disposeGroup(g) {
-      while (g.children.length > 0) {
-        const c = g.children[0];
-        g.remove(c);
-        c.traverse((o) => {
-          if (o.geometry) o.geometry.dispose();
-          if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => m.dispose());
-        });
-      }
+      animate();
     }
 
     function rebuild3DScene() {
       if (!scene) return;
-
-      // Clear previous meshes
-      [palletGroup, boxesGroup, boundaryGroup].forEach(disposeGroup);
-      
-      
+      while (palletGroup.children.length > 0) palletGroup.remove(palletGroup.children[0]);
+      while (boxesGroup.children.length > 0) boxesGroup.remove(boxesGroup.children[0]);
+      while (boundaryGroup.children.length > 0) boundaryGroup.remove(boundaryGroup.children[0]);
 
       const { l: pL, w: pW, maxH: pMaxH } = state.pallet;
-      const opt = state.orientations[state.selectedIndex];
-      cameraTarget.set(0, pMaxH * 0.45, 0);
-      updateCameraPosition();
+      const opt = state.orientations[state.selectedIndex] || state.orientations[0];
 
-      // 1. Build Realistic Wooden Pallet Base (Top surface at y = 0)
+      // Restored Multi-slat Wooden Pallet
       const woodMat = new THREE.MeshStandardMaterial({ color: 0xd4b483, roughness: 0.78 });
       const blockMat = new THREE.MeshStandardMaterial({ color: 0xb08d57, roughness: 0.85 });
 
-      // Top deck boards
       const numSlats = 7;
       const slatDepth = (pW / numSlats) * 0.82;
       const slatThick = 0.025;
       for (let i = 0; i < numSlats; i++) {
         const zPos = -pW / 2 + (pW / numSlats) * (i + 0.5);
-        const slatGeo = new THREE.BoxGeometry(pL, slatThick, slatDepth);
-        const slatMesh = new THREE.Mesh(slatGeo, woodMat);
+        const slatMesh = new THREE.Mesh(new THREE.BoxGeometry(pL, slatThick, slatDepth), woodMat);
         slatMesh.position.set(0, -slatThick / 2, zPos);
-        slatMesh.receiveShadow = true;
         palletGroup.add(slatMesh);
       }
 
-      // Support runner blocks & bottom boards
       const blockH = 0.095;
       const blockPositions = [-pL * 0.42, 0, pL * 0.42];
       blockPositions.forEach((bx) => {
         blockPositions.forEach((bz) => {
-          const bGeo = new THREE.BoxGeometry(pL * 0.12, blockH, pW * 0.12);
-          const bMesh = new THREE.Mesh(bGeo, blockMat);
+          const bMesh = new THREE.Mesh(new THREE.BoxGeometry(pL * 0.12, blockH, pW * 0.12), blockMat);
           bMesh.position.set(bx, -slatThick - blockH / 2, bz);
           palletGroup.add(bMesh);
         });
-        // Bottom runner slat
-        const botGeo = new THREE.BoxGeometry(pL * 0.13, 0.02, pW);
-        const botMesh = new THREE.Mesh(botGeo, woodMat);
+        const botMesh = new THREE.Mesh(new THREE.BoxGeometry(pL * 0.13, 0.02, pW), woodMat);
         botMesh.position.set(bx, -slatThick - blockH - 0.01, 0);
         palletGroup.add(botMesh);
       });
 
-      // 2. Build Translucent Max Height Boundary Box (pL x pMaxH x pW)
-      const boundGeo = new THREE.BoxGeometry(pL, pMaxH, pW);
-      const boundEdges = new THREE.EdgesGeometry(boundGeo);
-      const boundLine = new THREE.LineSegments(
-        boundEdges,
-        new THREE.LineDashedMaterial({ color: 0xf59e0b, dashSize: 0.06, gapSize: 0.04 })
-      );
+      // Max Height Boundary Frame
+      const boundEdges = new THREE.EdgesGeometry(new THREE.BoxGeometry(pL, pMaxH, pW));
+      const boundLine = new THREE.LineSegments(boundEdges, new THREE.LineDashedMaterial({ color: 0xf59e0b, dashSize: 0.05, gapSize: 0.03 }));
       boundLine.computeLineDistances();
       boundLine.position.set(0, pMaxH / 2, 0);
       boundaryGroup.add(boundLine);
 
-      // Subtle top ceiling plane at maxH
-      const topPlaneGeo = new THREE.PlaneGeometry(pL, pW);
-      const topPlaneMat = new THREE.MeshBasicMaterial({
-        color: 0xf59e0b,
-        transparent: true,
-        opacity: 0.05,
-        side: THREE.DoubleSide
-      });
-      const topPlane = new THREE.Mesh(topPlaneGeo, topPlaneMat);
-      topPlane.rotation.x = Math.PI / 2;
-      topPlane.position.set(0, pMaxH, 0);
-      boundaryGroup.add(topPlane);
+      if (!opt.isValid) return;
 
-      // 3. Build Stacked Product Boxes
-      if (!opt.isValid || opt.actualItems === 0) return;
-
+      const gap = 0.004;
       const edgeMat = new THREE.LineBasicMaterial({ color: 0x1e3a8a, transparent: true, opacity: 0.45 });
 
-      let itemsPlaced = 0;
-      const MAX_3D_BOXES = 1500;
-      const limit = Math.min(opt.actualItems, MAX_3D_BOXES);
-      const geoCache = {};
-      const edgeCache = {};
-      if (opt.actualItems > MAX_3D_BOXES) {
-        showNotification(`3D preview shows the first ${MAX_3D_BOXES} of ${opt.actualItems} boxes. Totals and 2D views use the full count.`, 'warning');
-      }
-      const gap = 0.004; // Tiny visual seam between adjacent boxes
-
       for (let lyr = 0; lyr < opt.actualLayers; lyr++) {
-        if (itemsPlaced >= limit) break;
         const layerGroup = new THREE.Group();
-        const spec = layerSpec(opt, lyr);
-        const isEvenLayer = lyr % 2 === 1;
-        const rotateLayer = (state.interlock || state.layerPattern === 'rot90') && isEvenLayer && opt.canInterlockLayer;
-        const flipLayer = state.layerPattern === 'flip' && isEvenLayer;
+        const isEven = lyr % 2 === 1;
 
-        for (let b = 0; b < spec.pack.boxes.length; b++) {
-          if (itemsPlaced >= limit) break;
-          itemsPlaced++;
+        opt.layerPack.boxes.forEach((b) => {
+          const bw = Math.max(0.01, b.w - gap);
+          const bd = Math.max(0.01, b.d - gap);
+          const bh = Math.max(0.01, opt.upDim - gap);
 
-          let boxInfo = spec.pack.boxes[b];
-          if (flipLayer) {
-            boxInfo = { x: spec.pack.usedL - boxInfo.x - boxInfo.w, y: spec.pack.usedW - boxInfo.y - boxInfo.d, w: boxInfo.w, d: boxInfo.d, rotated: boxInfo.rotated };
-          } else if (rotateLayer) {
-            boxInfo = { x: boxInfo.y, y: spec.pack.usedL - boxInfo.x - boxInfo.w, w: boxInfo.d, d: boxInfo.w, rotated: !boxInfo.rotated };
-          }
-          const bw = Math.max(0.01, boxInfo.w - gap);
-          const bd = Math.max(0.01, boxInfo.d - gap);
-          const bh = Math.max(0.01, spec.up - gap);
-
-          // Individual material so hovering highlights a single box cleanly
-          const boxMat = new THREE.MeshStandardMaterial({
-            color: isEvenLayer ? 0x60a5fa : 0x3b82f6,
-            roughness: 0.45,
-            metalness: 0.05
-          });
-
-          const gk = `${bw}|${bh}|${bd}`;
-          const geo = geoCache[gk] || (geoCache[gk] = new THREE.BoxGeometry(bw, bh, bd));
+          const boxMat = new THREE.MeshStandardMaterial({ color: isEven ? 0x60a5fa : 0x3b82f6, roughness: 0.4 });
+          const geo = new THREE.BoxGeometry(bw, bh, bd);
           const mesh = new THREE.Mesh(geo, boxMat);
-          mesh.castShadow = true;
-          mesh.receiveShadow = true;
 
-          // Store canonical metadata for hover tooltip
-          mesh.userData.boxMeta = {
-            layer: lyr + 1,
-            index: itemsPlaced,
-            w: boxInfo.w,
-            d: boxInfo.d,
-            h: spec.up,
-            x: boxInfo.x,
-            y: spec.y0,
-            z: boxInfo.y
-          };
-
-          // Center box coordinate relative to pallet center (0,0,0)
-          const cx = -pL / 2 + boxInfo.x + boxInfo.w / 2;
-          const cz = -pW / 2 + boxInfo.y + boxInfo.d / 2;
+          const cx = -pL / 2 + b.x + b.w / 2;
+          const cz = -pW / 2 + b.y + b.d / 2;
           mesh.position.set(cx, 0, cz);
 
-          // Crisp edges
-          const edges = edgeCache[gk] || (edgeCache[gk] = new THREE.EdgesGeometry(geo));
-          const line = new THREE.LineSegments(edges, edgeMat);
-          mesh.add(line);
+          const edges = new THREE.EdgesGeometry(geo);
+          mesh.add(new THREE.LineSegments(edges, edgeMat));
 
           layerGroup.add(mesh);
+        });
+
+        // Alternate layer 90° interlock
+        if ((state.interlock || state.layerPattern === 'rot90') && isEven && opt.canInterlockLayer) {
+          layerGroup.rotation.y = Math.PI / 2;
         }
 
-        // Apply optional 90-degree interlocking rotation on even layers
-        // (90° interlock is applied to box coordinates above, so layers stay inside the pallet)
-
-        // Vertical position + layer explosion offset
-        const explodeOffset = lyr * state.explodeFactor * spec.up * 1.4;
-        const yPos = spec.y0 + spec.up / 2 + explodeOffset;
+        const yPos = lyr * opt.upDim + opt.upDim / 2 + lyr * state.explodeFactor * opt.upDim * 1.5;
         layerGroup.position.set(0, yPos, 0);
-
         boxesGroup.add(layerGroup);
       }
     }
@@ -1706,131 +1136,17 @@
       }
     }
 
-    /**
-     * =========================================================================
-     * EVENT LISTENERS & MASTER UPDATE LOOP
-     * =========================================================================
-     */
-    function switchUnit(newUnit) {
-      if (!UNIT_CONFIG[newUnit] || state.unit === newUnit) return;
-      const ratio = UNIT_CONFIG[state.unit].toMeters / UNIT_CONFIG[newUnit].toMeters;
-      ['input-length', 'input-width', 'input-height', 'pallet-l', 'pallet-w', 'pallet-max-h'].forEach((id) => {
-        const el = document.getElementById(id);
-        const v = parseFloat(el.value);
-        if (!isNaN(v)) el.value = Number((v * ratio).toFixed(4));
-      });
-      state.unit = newUnit;
-
-      // Update segmented button active styling
-      document.querySelectorAll('.unit-seg-btn').forEach((btn) => {
-        if (btn.dataset.unit === newUnit) {
-          btn.classList.add('active');
-          btn.classList.remove('text-[#6E6E73]');
-          btn.classList.add('text-[#1D1D1F]');
-        } else {
-          btn.classList.remove('active');
-          btn.classList.add('text-[#6E6E73]');
-        }
-      });
-
-      // Update all unit suffix badges
-      document.querySelectorAll('.unit-suffix').forEach((el) => {
-        el.textContent = newUnit;
-      });
-
-      // Scale default pallet input values cleanly to match the chosen unit
-
-      // Keep user's raw entered product numbers as-is, re-interpreting them in the new unit
-      readInputsAndUpdate(true);
-    }
-
-    function readInputsAndUpdate(triggerModal = false) {
-      const factor = UNIT_CONFIG[state.unit].toMeters;
-
-      const rawL = parseFloat(document.getElementById('input-length').value);
-      const rawW = parseFloat(document.getElementById('input-width').value);
-      const rawH = parseFloat(document.getElementById('input-height').value);
-      const qtyRaw = document.getElementById('input-qty').value.trim();
-
-      const rawPL = parseFloat(document.getElementById('pallet-l').value);
-      const rawPW = parseFloat(document.getElementById('pallet-w').value);
-      const rawPMaxH = parseFloat(document.getElementById('pallet-max-h').value);
-
-      if (isNaN(rawL) || rawL <= 0 || isNaN(rawW) || rawW <= 0 || isNaN(rawH) || rawH <= 0) {
-        if (triggerModal) {
-          showNotification('Please enter valid positive numbers greater than 0 for Length, Width, and Height.', 'error');
-        }
-        return;
-      }
-
-      if (isNaN(rawPL) || rawPL <= 0 || isNaN(rawPW) || rawPW <= 0 || isNaN(rawPMaxH) || rawPMaxH <= 0) {
-        if (triggerModal) {
-          showNotification('Pallet dimensions and maximum height must be greater than 0.', 'error');
-        }
-        return;
-      }
-
-      const sortedDims = [rawL, rawW, rawH].sort((a, b) => a - b);
-      if ((rawPL * rawPW) / (sortedDims[0] * sortedDims[1]) > 10000) {
-        if (triggerModal) showNotification('The product is extremely small compared with the pallet (over 10,000 boxes per layer). Please check that the unit selector matches your measurements.', 'error');
-        return;
-      }
-      state.product = { l: rawL * factor, w: rawW * factor, h: rawH * factor };
-      state.targetQty = qtyRaw !== '' && parseInt(qtyRaw, 10) > 0 ? parseInt(qtyRaw, 10) : null;
-      state.pallet = { l: rawPL * factor, w: rawPW * factor, maxH: rawPMaxH * factor };
-
-      calculateAllOrientations();
-      updateAllViews();
-
-      if (triggerModal) {
-        checkAllInvalid() || checkAndTriggerLimitModal(true);
-      }
-    }
-
-    function checkAllInvalid() {
-      const os = state.orientations;
-      if (!os.length || os.some((o) => o.isValid)) return false;
-      const { l, w, h } = state.product, { l: pL, w: pW, maxH } = state.pallet;
-      openLimitAlertModal({ title: 'Product Exceeds Pallet',
-        message: 'This product does not fit the pallet in any orientation. Reduce the product size or choose a larger pallet or higher height limit.',
-        rows: [{ label: 'Product (L × W × H):', value: `${formatDim(l)} × ${formatDim(w)} × ${formatDim(h)}`, highlight: true },
-          { label: 'Pallet base:', value: `${formatDim(pL)} × ${formatDim(pW)}` }, { label: 'Max stack height:', value: formatDim(maxH) }],
-        validAlternativeIdx: null });
-      return true;
-    }
-
-    function layerRows(opt) {
-      const rows = []; let left = opt.actualItems;
-      for (let i = 0; i < opt.actualLayers && left > 0; i++) {
-        const sp = layerSpec(opt, i), n = Math.min(sp.pack.count, left); left -= n;
-        const alt = i % 2 === 1 && state.layerPattern === 'flip' ? ' (rotated 180°)' : i % 2 === 1 && state.layerPattern === 'rot90' && opt.canInterlockLayer ? ' (rotated 90°)' : '';
-        rows.push({ layer: i + 1, up: sp.up, base: sp.base, n, pattern: sp.pack.patternName.replace(/\{\{([^}]+)\}\}/g, (_, v) => formatDim(parseFloat(v))) + alt });
-      }
-      return rows;
-    }
-
-    function exportCSV() {
-      const opt = state.orientations[state.selectedIndex]; if (!opt || !opt.isValid) return;
-      const u = state.unit, d = (v) => formatDim(v, false);
-      let csv = `Layer,Vertical side (${u}),Footprint (${u}),Boxes,Pattern\n`;
-      layerRows(opt).forEach((r) => { csv += `${r.layer},${d(r.up)},${d(r.base[0])} x ${d(r.base[1])},${r.n},"${r.pattern}"\n`; });
-      csv += `\nTotal boxes,${opt.actualItems}\nStack height (${u}),${d(opt.totalHeight)}\nPallet (${u}),${d(state.pallet.l)} x ${d(state.pallet.w)} x ${d(state.pallet.maxH)}\nBase utilisation %,${opt.baseUtilPct.toFixed(1)}\nVolume utilisation %,${opt.volUtilPct.toFixed(1)}\n`;
-      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = 'pallet_loading_plan.csv'; a.click();
-    }
-
-    function exportSheet() {
-      const opt = state.orientations[state.selectedIndex]; if (!opt || !opt.isValid) return;
-      const win = window.open('', '_blank');
-      if (!win) { showNotification('Your browser blocked the print window. Allow pop-ups and try again.', 'warning'); return; }
-      const rows = layerRows(opt).map((r) => `<tr><td>${r.layer}</td><td>${formatDim(r.up)}</td><td>${formatDim(r.base[0], false)} × ${formatDim(r.base[1])}</td><td>${r.n}</td><td>${r.pattern}</td></tr>`).join('');
-      win.document.write(`<html><head><title>Pallet Loading Sheet</title><style>body{font-family:Arial,sans-serif;margin:24px;color:#111}table{border-collapse:collapse;margin-top:14px}td,th{border:1px solid #bbb;padding:5px 10px;font-size:12px;text-align:left}svg{width:340px;height:auto}</style></head><body><h2>Pallet Loading Sheet</h2><p>Pallet ${formatDim(state.pallet.l)} × ${formatDim(state.pallet.w)} × ${formatDim(state.pallet.maxH)} max &nbsp;|&nbsp; <b>${opt.actualItems} boxes</b>, ${opt.actualLayers} layers, ${formatDim(opt.totalHeight)} high &nbsp;|&nbsp; Layer pattern: ${state.layerPattern || 'column'}</p><div style="display:flex;gap:16px">${document.getElementById('svg-top-view').outerHTML}${document.getElementById('svg-side-view').outerHTML}</div><table><tr><th>Layer</th><th>Vertical side</th><th>Footprint</th><th>Boxes</th><th>Layout</th></tr>${rows}</table></body></html>`);
-      win.document.close(); setTimeout(() => win.print(), 400);
+    function updateAllViews() {
+      renderOrientationCards();
+      renderKPIsAndSummary();
+      render2DSVGs();
+      rebuild3DScene();
     }
 
     function setPreset(lmm, wmm) {
       const f = UNIT_CONFIG[state.unit].toMeters;
-      document.getElementById('pallet-l').value = Number((lmm / 1000 / f).toFixed(4));
-      document.getElementById('pallet-w').value = Number((wmm / 1000 / f).toFixed(4));
+      document.getElementById('pallet-l').value = Number((lmm / 1000 / f).toFixed(2));
+      document.getElementById('pallet-w').value = Number((wmm / 1000 / f).toFixed(2));
       readInputsAndUpdate(true);
     }
 
@@ -1842,113 +1158,60 @@
       const cap = opt.maxCapacity;
       if (!opt.isValid || !cap) { out.textContent = 'This orientation cannot hold any boxes.'; return; }
       const full = Math.floor(t / cap), rem = t % cap;
-      const lastLayers = !opt.mixed && rem ? ` (about ${Math.ceil(rem / opt.itemsPerLayer)} layers)` : '';
-      out.innerHTML = `<b>${full + (rem ? 1 : 0)} pallet${full + (rem ? 1 : 0) === 1 ? '' : 's'}</b> needed at ${cap} boxes per full pallet.` + (rem ? ` ${full} full + 1 last pallet with <b>${rem}</b> boxes${lastLayers}.` : ` All ${full} pallets are full.`);
+      out.innerHTML = `<b>${full + (rem ? 1 : 0)} pallet${full + (rem ? 1 : 0) === 1 ? '' : 's'}</b> needed at ${cap} boxes per full pallet.` + (rem ? ` (${full} full + 1 with ${rem} boxes).` : ' All pallets full.');
     }
 
-    function ensurePanel() {
-      if (document.getElementById('extras-panel')) return;
-      const host = document.querySelector('main .lg\\:col-span-4'); if (!host) return;
-      const s = document.createElement('section'); s.id = 'extras-panel'; s.className = 'apple-card p-5 space-y-4';
-      const bc = 'px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-[#F5F5F7] hover:bg-gray-200 text-[#1D1D1F]';
-      s.innerHTML = `
-        <div><h2 class="text-sm font-semibold">Pallet Presets</h2><div class="flex flex-wrap gap-2 mt-2">
-          <button data-p="1200,800" class="preset-btn ${bc}">EUR 1200×800</button><button data-p="1200,1000" class="preset-btn ${bc}">UK/GMA 1200×1000</button>
-          <button data-p="1016,1219" class="preset-btn ${bc}">40×48 in</button><button id="preset-custom" class="${bc}">Custom</button></div></div>
-        <div><h2 class="text-sm font-semibold">Layer Pattern</h2>
-          <select id="layer-pattern" class="mt-2 w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white"><option value="column">Column (same layout every layer)</option><option value="rot90">Rotate even layers 90°</option><option value="flip">Brick (even layers turned 180°)</option></select></div>
-        <div><h2 class="text-sm font-semibold">Shipment Check</h2>
-          <input id="ship-total" type="number" min="1" placeholder="Total units to ship" class="mt-2 w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5" />
-          <p id="ship-result" class="text-xs text-[#424245] mt-2 leading-relaxed"></p></div>
-        <div><h2 class="text-sm font-semibold">Export</h2><div class="flex gap-2 mt-2"><button id="btn-export-sheet" class="${bc}">Print loading sheet</button><button id="btn-export-csv" class="${bc}">Download CSV</button></div></div>`;
-      host.appendChild(s);
-      s.querySelectorAll('.preset-btn').forEach((b) => b.addEventListener('click', () => { const [l, w] = b.dataset.p.split(',').map(Number); setPreset(l, w); }));
-      document.getElementById('preset-custom').addEventListener('click', () => { document.getElementById('pallet-settings-panel').classList.remove('hidden'); document.getElementById('pallet-settings-panel').classList.add('grid'); document.getElementById('pallet-l').focus(); });
-      document.getElementById('layer-pattern').addEventListener('change', (e) => { state.layerPattern = e.target.value; updateAllViews(); });
-      document.getElementById('ship-total').addEventListener('input', updateShipment);
-      document.getElementById('btn-export-sheet').addEventListener('click', exportSheet);
-      document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
+    function exportCSV() {
+      const opt = state.orientations[state.selectedIndex]; if (!opt || !opt.isValid) return;
+      const u = state.unit;
+      let csv = `Orientation,Boxes Per Layer,Layers,Total Packed,Stack Height (${u}),Payload (kg)\n`;
+      csv += `"${opt.code}",${opt.itemsPerLayer},${opt.actualLayers},${opt.actualItems},${formatDim(opt.totalHeight, false)},${opt.actualItems * state.boxWeight}\n`;
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = 'pallet_load_plan.csv'; a.click();
     }
 
-    function postRender() {
-      ensurePanel();
-      const opt = state.orientations[state.selectedIndex];
-      if (opt && opt.mixed) {
-        document.getElementById('loading-plan-details').innerHTML = layerRows(opt).map((r) => `<p><strong>Layer ${r.layer}:</strong> ${r.n} boxes, ${formatDim(r.up)} side vertical, ${formatDim(r.base[0], false)} × ${formatDim(r.base[1])} footprint</p>`).join('');
-      }
-      updateShipment();
+    function exportSheet() {
+      const opt = state.orientations[state.selectedIndex]; if (!opt || !opt.isValid) return;
+      const win = window.open('', '_blank');
+      if (!win) return;
+      win.document.write(`<html><head><title>Pallet Loading Sheet</title><style>body{font-family:Arial,sans-serif;margin:24px;color:#111}table{border-collapse:collapse;margin-top:14px}td,th{border:1px solid #bbb;padding:6px 12px;font-size:12px}</style></head><body><h2>Pallet Loading Sheet</h2><p>Pallet ${formatDim(state.pallet.l)} × ${formatDim(state.pallet.w)} × ${formatDim(state.pallet.maxH)} max | <b>${opt.actualItems} boxes</b> (${opt.actualLayers} layers) | Load Weight: ${(opt.actualItems * state.boxWeight).toFixed(1)} kg</p><div style="display:flex;gap:16px">${document.getElementById('svg-top-view').outerHTML}${document.getElementById('svg-side-view').outerHTML}</div></body></html>`);
+      win.document.close(); setTimeout(() => win.print(), 400);
     }
 
-    function updateAllViews() {
-      renderOrientationCards();
-      renderKPIsAndSummary();
-      render2DSVGs();
-      rebuild3DScene();
-      postRender();
-    }
+    /**
+     * BOOTSTRAP APP
+     */
+    document.addEventListener('DOMContentLoaded', () => {
+      initThreeJS();
 
-    let appInitialized = false;
-    let threeInitialized = false;
-
-    function tryStartThree() {
-      if (threeInitialized) return;
-      if (initThreeJS()) {
-        threeInitialized = true;
-        rebuild3DScene();
-        animate();
-      }
-    }
-
-    function bootApp() {
-      if (appInitialized) return;
-      appInitialized = true;
-
-      // 1. Bind all UI event listeners FIRST so buttons/inputs never fail
       document.querySelectorAll('.unit-seg-btn').forEach((btn) => {
-        // Remove old listeners to prevent duplication if called twice
-        const newBtn = btn.cloneNode(true);
-        btn.parentNode.replaceChild(newBtn, btn);
-        newBtn.addEventListener('click', () => {
-          switchUnit(newBtn.dataset.unit);
-        });
+        btn.addEventListener('click', () => switchUnit(btn.dataset.unit));
       });
 
       document.querySelectorAll('.cam-preset-btn').forEach((btn) => {
-        btn.addEventListener('click', () => setCameraPreset(btn.dataset.preset));
-      });
-
-      ['input-length', 'input-width', 'input-height', 'input-qty', 'pallet-l', 'pallet-w', 'pallet-max-h'].forEach((id) => {
-        const el = document.getElementById(id);
-        el.addEventListener('input', () => readInputsAndUpdate(false));
-        el.addEventListener('change', () => readInputsAndUpdate(true));
-        el.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            readInputsAndUpdate(true);
-          }
+        btn.addEventListener('click', () => {
+          const preset = btn.dataset.preset;
+          if (preset === 'iso') camera.position.set(2.4, 2.0, 2.7);
+          if (preset === 'top') camera.position.set(0.001, 3.2, 0);
+          if (preset === 'side') camera.position.set(0, 0.7, 3.0);
+          camera.lookAt(0, 0.7, 0);
         });
       });
 
-      document.getElementById('btn-calculate-layout').addEventListener('click', () => {
-        readInputsAndUpdate(true);
+      ['input-length', 'input-width', 'input-height', 'input-qty', 'pallet-l', 'pallet-w', 'pallet-max-h', 'w-box', 'w-load', 'w-layer'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', () => readInputsAndUpdate(false));
       });
 
-      document.getElementById('limit-alert-modal').addEventListener('click', (e) => {
-        if (e.target.id === 'limit-alert-modal') {
-          closeLimitAlertModal();
-        }
-      });
+      document.getElementById('btn-calculate-layout').addEventListener('click', () => readInputsAndUpdate(true));
 
       document.getElementById('explode-slider').addEventListener('input', (e) => {
         state.explodeFactor = parseFloat(e.target.value);
-        const pct = Math.round((state.explodeFactor / 0.45) * 100);
-        document.getElementById('explode-val').textContent = `${pct}%`;
+        document.getElementById('explode-val').textContent = `${Math.round((state.explodeFactor / 0.45) * 100)}%`;
         rebuild3DScene();
       });
 
       document.getElementById('toggle-interlock').addEventListener('change', (e) => {
         state.interlock = e.target.checked;
-        renderKPIsAndSummary();
         rebuild3DScene();
       });
 
@@ -1967,50 +1230,53 @@
         }
       });
 
-      document.getElementById('btn-reset-defaults').addEventListener('click', () => {
-        state.unit = 'm';
-        document.querySelectorAll('.unit-seg-btn').forEach((btn) => {
-          const isM = btn.dataset.unit === 'm';
-          btn.classList.toggle('active', isM);
-          btn.classList.toggle('text-[#0071E3]', isM);
-          btn.classList.toggle('text-[#6E6E73]', !isM);
+      document.querySelectorAll('.preset-btn').forEach((b) => {
+        b.addEventListener('click', () => {
+          const [l, w] = b.dataset.p.split(',').map(Number);
+          setPreset(l, w);
         });
-        document.querySelectorAll('.unit-suffix').forEach((el) => (el.textContent = 'm'));
+      });
 
-        document.getElementById('input-length').value = '0.6';
-        document.getElementById('input-width').value = '0.55';
-        document.getElementById('input-height').value = '0.54';
-        document.getElementById('input-qty').value = '';
-        document.getElementById('pallet-l').value = '1.2';
-        document.getElementById('pallet-w').value = '1.2';
-        document.getElementById('pallet-max-h').value = '1.8';
-        document.getElementById('explode-slider').value = '0';
-        document.getElementById('explode-val').textContent = '0%';
-        document.getElementById('toggle-interlock').checked = false;
+      document.getElementById('preset-custom').addEventListener('click', () => {
+        document.getElementById('pallet-settings-panel').classList.remove('hidden');
+        document.getElementById('pallet-settings-panel').classList.add('grid');
+        document.getElementById('pallet-l').focus();
+      });
 
-        state.explodeFactor = 0;
-        state.interlock = false;
-        state.selectedIndex = 0;
-        state.lastAlertSignature = '';
-        closeLimitAlertModal();
-        setCameraPreset('iso');
+      document.getElementById('layer-pattern').addEventListener('change', (e) => {
+        state.layerPattern = e.target.value;
+        updateAllViews();
+      });
+
+      document.getElementById('ship-total').addEventListener('input', updateShipment);
+      document.getElementById('auto-limit').addEventListener('change', (e) => {
+        state.autoLimit = e.target.checked;
         readInputsAndUpdate(false);
       });
 
-      // 2. Run initial calculation and render 2D UI immediately
-      calculateAllOrientations();
-      updateAllViews();
+      document.getElementById('btn-export-sheet').addEventListener('click', exportSheet);
+      document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
 
-      // 3. Initialize 3D canvas safely (and retry on window load if CDN script finished late)
-      tryStartThree();
-      window.addEventListener('load', tryStartThree);
-    }
+      document.getElementById('btn-reset-defaults').addEventListener('click', () => {
+        document.getElementById('input-length').value = '785';
+        document.getElementById('input-width').value = '345';
+        document.getElementById('input-height').value = '530';
+        document.getElementById('w-box').value = '21';
+        document.getElementById('pallet-l').value = '1200';
+        document.getElementById('pallet-w').value = '1000';
+        document.getElementById('pallet-max-h').value = '1800';
+        document.getElementById('input-qty').value = '';
+        state.unit = 'mm';
+        state.selectedIndex = 0;
+        state.explodeFactor = 0;
+        state.interlock = false;
+        document.getElementById('explode-slider').value = '0';
+        document.getElementById('toggle-interlock').checked = false;
+        readInputsAndUpdate(false);
+      });
 
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', bootApp);
-    } else {
-      bootApp();
-    }
+      readInputsAndUpdate(false);
+    });
   </script>
 </body>
 </html>
